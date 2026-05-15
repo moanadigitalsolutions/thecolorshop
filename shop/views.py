@@ -3,6 +3,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db.models import Prefetch, Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
@@ -12,34 +13,101 @@ from .models import Category, Order, Product, ProductVariant
 from .services import create_order_from_cart, send_order_confirmation
 
 
-def product_list(request):
-    form = ProductFilterForm(request.GET)
+def get_product_search_results(query='', category_slug=''):
     products = Product.objects.filter(is_active=True).select_related('category').prefetch_related(
         Prefetch('variants', queryset=ProductVariant.objects.filter(is_active=True).order_by('price'))
     )
-    categories = Category.objects.filter(is_active=True)
     selected_category = None
+
+    if query:
+        products = products.filter(
+            Q(name__icontains=query)
+            | Q(description__icontains=query)
+            | Q(variants__sku__icontains=query)
+            | Q(variants__color__icontains=query)
+            | Q(variants__finish__icontains=query)
+        ).distinct()
+
+    if category_slug:
+        selected_category = get_object_or_404(Category, slug=category_slug, is_active=True)
+        products = products.filter(category=selected_category)
+
+    return products, selected_category
+
+
+def serialize_product_search_results(products):
+    suggestions = []
+    product_cards = []
+
+    for product in products:
+        image_url = product.image.url if product.image else ''
+        product_cards.append(
+            {
+                'name': product.name,
+                'slug': product.slug,
+                'url': product.get_absolute_url(),
+                'description': (product.description or 'Available for pickup from The Color Shop.')[:118],
+                'category_name': product.category.name,
+                'starting_price': str(product.starting_price) if product.starting_price is not None else '',
+                'image_url': image_url,
+                'has_stock': product.starting_price is not None,
+            }
+        )
+
+        suggestions.append(
+            {
+                'label': product.name,
+                'meta': product.category.name,
+                'url': product.get_absolute_url(),
+                'type': 'product',
+            }
+        )
+
+        for variant in product.active_variants[:2]:
+            suggestions.append(
+                {
+                    'label': f'{product.name} - {variant.display_name}',
+                    'meta': variant.sku,
+                    'url': product.get_absolute_url(),
+                    'type': 'variant',
+                }
+            )
+
+    return {'suggestions': suggestions[:8], 'products': product_cards}
+
+
+def product_list(request):
+    form = ProductFilterForm(request.GET)
+    categories = Category.objects.filter(is_active=True)
+    products, selected_category = get_product_search_results()
 
     if form.is_valid():
         query = form.cleaned_data.get('q')
         category_slug = form.cleaned_data.get('category')
-        if query:
-            products = products.filter(
-                Q(name__icontains=query)
-                | Q(description__icontains=query)
-                | Q(variants__sku__icontains=query)
-                | Q(variants__color__icontains=query)
-                | Q(variants__finish__icontains=query)
-            ).distinct()
-        if category_slug:
-            selected_category = get_object_or_404(Category, slug=category_slug, is_active=True)
-            products = products.filter(category=selected_category)
+        products, selected_category = get_product_search_results(query=query, category_slug=category_slug)
 
     return render(
         request,
         'shop/product_list.html',
         {'products': products, 'categories': categories, 'filter_form': form, 'selected_category': selected_category},
     )
+
+
+def product_search_api(request):
+    form = ProductFilterForm(request.GET)
+    if not form.is_valid():
+        return JsonResponse({'suggestions': [], 'products': [], 'count': 0})
+
+    query = form.cleaned_data.get('q', '').strip()
+    category_slug = form.cleaned_data.get('category', '').strip()
+
+    if not query and not category_slug:
+        return JsonResponse({'suggestions': [], 'products': [], 'count': 0})
+
+    products, _selected_category = get_product_search_results(query=query, category_slug=category_slug)
+    payload = serialize_product_search_results(products[:12])
+    payload['count'] = products.count()
+    return JsonResponse(payload)
 
 
 def product_detail(request, slug):

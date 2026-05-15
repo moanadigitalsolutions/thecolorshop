@@ -1,57 +1,81 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}Products | The Color Shop{% endblock %}
+{% block body_class %}product-list-page{% endblock %}
+{% block navbar_search %}
+  <div class="navbar-search-shell d-none d-lg-flex" data-navbar-search-shell>
+    <form class="navbar-product-search" action="{% url 'product_list' %}" method="get" autocomplete="off" role="search" data-product-search-form="nav">
+      <label class="visually-hidden" for="nav_search_q">Search products</label>
+      <span class="navbar-search-icon" aria-hidden="true"><i class="bi bi-search"></i></span>
+      <input class="form-control border-0 shadow-none" id="nav_search_q" type="search" name="q" value="{{ request.GET.q }}" placeholder="Search products" data-search-input>
+      <input type="hidden" name="category" value="{{ request.GET.category }}" data-search-category-mirror>
+      <button class="btn btn-dark btn-sm rounded-pill px-3" type="submit">Search</button>
+      <div class="search-suggestions search-suggestions-navbar" data-search-suggestions hidden></div>
+    </form>
+  </div>
+{% endblock %}
 {% block content %}
-<section class="brand-hero mb-4" style="--hero-image: url('{% static 'img/tcs-hero.jpg' %}?v=20260516-0131');">
-  <div class="brand-hero-content">
-    <p class="kicker text-white-50 mb-2">Apia pickup orders</p>
-    <h1 class="display-6 fw-bold text-white mb-3">Great brands. Great products.</h1>
-    <p class="lead text-white-75 mb-4">Paint, varnishes, brushware, and home improvement supplies ready for store pickup.</p>
-    <div class="d-flex flex-wrap gap-2">
-      <a class="btn btn-light btn-lg" href="#catalog"><i class="bi bi-grid-3x3-gap me-2" aria-hidden="true"></i>Browse products</a>
-      <a class="btn btn-outline-light btn-lg" href="{% url 'cart_detail' %}"><i class="bi bi-bag me-2" aria-hidden="true"></i>View cart</a>
-    </div>
-  </div>
-  <div class="brand-hero-strip" aria-label="Store details">
-    <span><i class="bi bi-shop me-1" aria-hidden="true"></i>Pickup only</span>
-    <span><i class="bi bi-cash-coin me-1" aria-hidden="true"></i>Cash at store</span>
-    <span><i class="bi bi-geo-alt me-1" aria-hidden="true"></i>Apia, Samoa</span>
-  </div>
-</section>
+<form class="catalog-search-form" action="{% url 'product_list' %}" method="get" data-product-search-root data-product-search-form="hero" data-search-api-url="{% url 'product_search_api' %}">
+  <section class="brand-hero mb-4" style="--hero-image: url('{% static 'img/tcs-hero.jpg' %}?v=20260516-0131');">
+    <div class="brand-hero-inner">
+      <div class="brand-hero-content">
+        <span class="hero-eyebrow"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>Apia, Samoa pickup orders</span>
+        <h1 class="hero-headline">Great brands.<br>Great products.</h1>
+        <p class="hero-lead">Paint, varnishes, brushware, and home improvement supplies ready for store pickup.</p>
 
-<section id="catalog" class="mb-4">
-  <div class="section-header">
-    <div>
-      <p class="kicker mb-1">Catalogue</p>
-      <h2 class="h3 mb-0">Available for pickup</h2>
-    </div>
-    <span class="badge text-bg-light border rounded-pill px-3 py-2">{{ products|length }} product{{ products|length|pluralize }}</span>
-  </div>
+        <div class="hero-search" data-hero-search-sentinel>
+          <label class="visually-hidden" for="hero_search_q">Search products</label>
+          <span class="hero-search-icon" aria-hidden="true"><i class="bi bi-search"></i></span>
+          <input class="hero-search-input" id="hero_search_q" type="search" name="q" value="{{ request.GET.q }}" placeholder="Search products, SKU, or color" autocomplete="off" data-search-input>
+          <button class="hero-search-button" type="submit">Search</button>
+          <div class="search-suggestions" data-search-suggestions hidden></div>
+        </div>
 
-  <form class="filter-panel row g-3 align-items-end mb-4" method="get">
-    <div class="col-lg-6">
-      <label class="form-label fw-semibold" for="id_q">Search products</label>
-      <div class="input-group input-group-lg">
-        <span class="input-group-text bg-white"><i class="bi bi-search" aria-hidden="true"></i></span>
-        <input class="form-control" id="id_q" type="search" name="q" value="{{ request.GET.q }}" placeholder="Product, SKU, color, finish">
+        <div class="hero-actions">
+          <a class="btn btn-accent btn-lg" href="#catalog"><i class="bi bi-grid-3x3-gap me-2" aria-hidden="true"></i>Browse catalogue</a>
+          <a class="hero-link" href="{% url 'cart_detail' %}"><i class="bi bi-bag me-2" aria-hidden="true"></i>View cart</a>
+        </div>
+
+        <ul class="hero-meta" aria-label="Store details">
+          <li><i class="bi bi-shop" aria-hidden="true"></i>Pickup only</li>
+          <li><i class="bi bi-cash-coin" aria-hidden="true"></i>Cash at store</li>
+          <li><i class="bi bi-clock" aria-hidden="true"></i>Mon–Sat</li>
+        </ul>
       </div>
     </div>
-    <div class="col-lg-4">
-      <label class="form-label fw-semibold" for="id_category">Category</label>
-      <select class="form-select form-select-lg" id="id_category" name="category">
-        <option value="">All categories</option>
-        {% for category in categories %}
-          <option value="{{ category.slug }}" {% if request.GET.category == category.slug %}selected{% endif %}>{{ category.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-lg-2 d-grid">
-      <button class="btn btn-dark btn-lg" type="submit">Filter</button>
-    </div>
-  </form>
-</section>
+  </section>
 
-<div class="product-grid">
+  <section id="catalog" class="mb-4">
+    <div class="section-header">
+      <div>
+        <p class="kicker mb-1">Catalogue</p>
+        <h2 class="h3 mb-0">Available for pickup</h2>
+      </div>
+      <span class="badge text-bg-light border rounded-pill px-3 py-2" data-product-count>{{ products|length }} product{{ products|length|pluralize }}</span>
+    </div>
+
+    <div class="filter-panel catalog-controls row g-3 align-items-end mb-4">
+      <div class="col-lg-5">
+        <p class="catalog-controls-label mb-2">Refine catalogue</p>
+        <p class="text-secondary mb-0">Use the hero search for instant results. Category stays available here as a secondary filter.</p>
+      </div>
+      <div class="col-lg-4">
+        <label class="form-label fw-semibold" for="id_category">Category</label>
+        <select class="form-select form-select-lg" id="id_category" name="category" data-search-category>
+          <option value="">All categories</option>
+          {% for category in categories %}
+            <option value="{{ category.slug }}" {% if request.GET.category == category.slug %}selected{% endif %}>{{ category.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-lg-3 d-grid">
+        <button class="btn btn-dark btn-lg" type="submit">Apply filters</button>
+      </div>
+    </div>
+  </section>
+</form>
+
+<div class="product-grid" data-product-grid>
   {% for product in products %}
     <article class="product-card">
       <a class="product-image" href="{{ product.get_absolute_url }}" aria-label="View {{ product.name }}">
@@ -82,11 +106,14 @@
       </div>
     </article>
   {% empty %}
-    <div class="empty-state grid-column-full">
+    <div class="empty-state grid-column-full" data-empty-state>
       <i class="bi bi-search display-6 d-block mb-3" aria-hidden="true"></i>
       <h2 class="h4 text-dark">No products matched your filters.</h2>
       <p class="mb-0">Try another category, SKU, color, or finish.</p>
     </div>
   {% endfor %}
 </div>
+{% endblock %}
+{% block extra_scripts %}
+  <script src="{% static 'js/product-search.js' %}?v=20260516-search-state-sync"></script>
 {% endblock %}

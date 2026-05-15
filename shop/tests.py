@@ -97,3 +97,62 @@ class ProductVariantTests(TestCase):
 
         self.assertEqual(variant.display_name, 'Beige / 10L / Satin')
         self.assertEqual(variant.stock_state, 'low stock')
+
+
+class ProductSearchApiTests(TestCase):
+    def setUp(self):
+        self.paint_category = Category.objects.create(name='Interior Paint', slug='interior-paint')
+        self.tools_category = Category.objects.create(name='Tools', slug='tools')
+
+        self.paint_product = Product.objects.create(
+            category=self.paint_category,
+            name='Premium Interior Low Sheen',
+            slug='premium-interior-low-sheen',
+            description='Durable wall paint for bedrooms and living rooms.',
+        )
+        ProductVariant.objects.create(
+            product=self.paint_product,
+            sku='TCS-INT-BLU-4L',
+            color='Ocean Blue',
+            finish='Low Sheen',
+            price=Decimal('89.00'),
+            stock_quantity=6,
+        )
+
+        self.tools_product = Product.objects.create(
+            category=self.tools_category,
+            name='Roller Kit',
+            slug='roller-kit',
+            description='Tray, roller frame, and sleeve.',
+        )
+        ProductVariant.objects.create(
+            product=self.tools_product,
+            sku='TCS-TOOL-ROLLER',
+            color='',
+            finish='',
+            price=Decimal('42.00'),
+            stock_quantity=4,
+        )
+
+    def test_product_search_api_returns_matches_for_query(self):
+        response = self.client.get(reverse('product_search_api'), {'q': 'blue'})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['count'], 1)
+        self.assertEqual(payload['products'][0]['slug'], self.paint_product.slug)
+        self.assertEqual(payload['suggestions'][0]['type'], 'product')
+
+    def test_product_search_api_respects_category_filter(self):
+        response = self.client.get(reverse('product_search_api'), {'q': 'kit', 'category': self.tools_category.slug})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['count'], 1)
+        self.assertEqual(payload['products'][0]['slug'], self.tools_product.slug)
+
+    def test_product_search_api_returns_empty_for_blank_query_and_category(self):
+        response = self.client.get(reverse('product_search_api'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'suggestions': [], 'products': [], 'count': 0})
