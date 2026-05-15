@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}{{ product.name }} | The Color Shop{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'product_list' %}">Products</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
+  </ol>
+</nav>
+
+<div class="row g-4 align-items-start">
+  <div class="col-lg-6">
+    <div class="detail-image shadow-sm">
+      {% if product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+      {% else %}
+        <div>
+          <i class="bi bi-palette display-4 d-block mb-2" aria-hidden="true"></i>
+          <span>{{ product.category.name }}</span>
+        </div>
+      {% endif %}
+    </div>
+    <div class="row g-2 mt-2">
+      <div class="col-4"><div class="hero-stat text-center"><small class="text-secondary">Pickup</small><strong class="d-block">Store</strong></div></div>
+      <div class="col-4"><div class="hero-stat text-center"><small class="text-secondary">Payment</small><strong class="d-block">Cash</strong></div></div>
+      <div class="col-4"><div class="hero-stat text-center"><small class="text-secondary">Stock</small><strong class="d-block">By SKU</strong></div></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <p class="kicker mb-2">{{ product.category.name }}</p>
+    <h1 class="display-6 fw-bold mb-3">{{ product.name }}</h1>
+    <p class="lead text-secondary">{{ product.description|default:'Select a stocked variant and add it to your pickup order.' }}</p>
+
+    <form method="post" action="{% url 'cart_add' %}" class="purchase-panel mt-4">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+        <div>
+          <h2 class="h5 mb-1">Choose variant</h2>
+          <p class="small text-secondary mb-0">Each option is a stocked SKU.</p>
+        </div>
+        <span class="badge text-bg-light border rounded-pill">{{ variants|length }} option{{ variants|length|pluralize }}</span>
+      </div>
+
+      <div class="variant-list mb-3">
+        {% for variant in variants %}
+          <label class="variant-option d-flex gap-3 align-items-start {% if not variant.is_in_stock %}opacity-75{% endif %}" for="variant_{{ variant.id }}">
+            <input class="form-check-input mt-1" type="radio" name="variant_id" id="variant_{{ variant.id }}" value="{{ variant.id }}" {% if forloop.first and variant.is_in_stock %}checked{% endif %} {% if not variant.is_in_stock %}disabled{% endif %} required>
+            <span class="flex-grow-1">
+              <span class="d-flex flex-wrap justify-content-between gap-2">
+                <strong>{{ variant.display_name }}</strong>
+                <span class="fw-bold">WST {{ variant.price }}</span>
+              </span>
+              <span class="d-flex flex-wrap gap-2 mt-2">
+                <span class="badge text-bg-light border">{{ variant.sku }}</span>
+                {% if variant.stock_state == 'low stock' %}
+                  <span class="stock-badge stock-low">Low stock</span>
+                {% elif variant.is_in_stock %}
+                  <span class="stock-badge stock-in">{{ variant.stock_quantity }} available</span>
+                {% else %}
+                  <span class="stock-badge stock-out">Out of stock</span>
+                {% endif %}
+              </span>
+            </span>
+          </label>
+        {% empty %}
+          <div class="alert alert-warning mb-0">No active variants are available for this product.</div>
+        {% endfor %}
+      </div>
+
+      <label class="form-label fw-semibold" for="quantity">Quantity</label>
+      <div class="input-group input-group-lg mb-3">
+        <span class="input-group-text bg-white"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+        <input class="form-control" id="quantity" name="quantity" type="number" min="1" value="1">
+      </div>
+      <button class="btn btn-accent btn-lg w-100" type="submit" {% if not variants %}disabled{% endif %}>
+        <i class="bi bi-bag-plus me-2" aria-hidden="true"></i>Add to cart
+      </button>
+      <p class="small text-secondary text-center mt-3 mb-0">Pickup only from The Color Shop. Pay cash when collecting.</p>
+    </form>
+  </div>
+</div>
+{% endblock %}

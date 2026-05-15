@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}{{ order.order_number }} | The Color Shop{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'order_history' %}">Orders</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ order.order_number }}</li>
+  </ol>
+</nav>
+
+<div class="section-header">
+  <div>
+    <p class="kicker mb-1">Pickup order</p>
+    <h1 class="h2 mb-1">{{ order.order_number }}</h1>
+    <p class="text-secondary mb-0">Placed {{ order.created_at|date:'M j, Y g:i A' }}</p>
+  </div>
+  {% if order.status == 'pending_pickup_payment' %}
+    <span class="status-badge status-pending">{{ order.get_status_display }}</span>
+  {% elif order.status == 'ready_for_pickup' %}
+    <span class="status-badge status-ready">{{ order.get_status_display }}</span>
+  {% elif order.status == 'completed' %}
+    <span class="status-badge status-completed">{{ order.get_status_display }}</span>
+  {% else %}
+    <span class="status-badge status-cancelled">{{ order.get_status_display }}</span>
+  {% endif %}
+</div>
+
+<div class="order-timeline mb-4" aria-label="Order progress">
+  <span class="active">Pending pickup payment</span>
+  <span class="{% if order.status == 'ready_for_pickup' or order.status == 'completed' %}active{% endif %}">Ready for pickup</span>
+  <span class="{% if order.status == 'completed' %}active{% endif %}">Completed</span>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="order-card p-3">
+      <h2 class="h5 mb-3">Items</h2>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Product</th><th>SKU</th><th>Qty</th><th class="text-end">Total</th></tr></thead>
+          <tbody>
+            {% for item in order.items.all %}
+              <tr>
+                <td><strong>{{ item.product_name }}</strong><br><small class="text-secondary">{{ item.variant_name }}</small></td>
+                <td><span class="badge text-bg-light border">{{ item.sku }}</span></td>
+                <td>{{ item.quantity }}</td>
+                <td class="text-end fw-semibold">WST {{ item.line_total }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot><tr><th colspan="3" class="text-end">Total due at pickup</th><th class="text-end">WST {{ order.total }}</th></tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+  <aside class="col-lg-4">
+    <div class="summary-panel">
+      <h2 class="h5 mb-3">Pickup details</h2>
+      <div class="d-grid gap-3 small">
+        <div>
+          <span class="text-secondary d-block">Pickup person</span>
+          <strong>{{ order.pickup_name }}</strong>
+        </div>
+        <div>
+          <span class="text-secondary d-block">Pickup address</span>
+          <strong>{{ order.pickup_address }}</strong>
+        </div>
+        <div>
+          <span class="text-secondary d-block">Payment</span>
+          <strong>{{ order.get_payment_method_display }}</strong>
+        </div>
+        {% if order.special_instructions %}
+          <div>
+            <span class="text-secondary d-block">Notes</span>
+            <span>{{ order.special_instructions }}</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

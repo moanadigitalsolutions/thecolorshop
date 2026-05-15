@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Checkout | The Color Shop{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'product_list' %}">Products</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'cart_detail' %}">Cart</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Checkout</li>
+  </ol>
+</nav>
+
+<div class="section-header">
+  <div>
+    <p class="kicker mb-1">Pickup checkout</p>
+    <h1 class="h2 mb-1">Confirm pickup details</h1>
+    <p class="text-secondary mb-0">Orders are placed online and paid by cash at the store.</p>
+  </div>
+</div>
+
+<div class="stepper" aria-label="Checkout progress">
+  <span>Cart</span>
+  <span class="active">Pickup info</span>
+  <span>Confirmation</span>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <form method="post" class="checkout-form checkout-panel" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+      <h2 class="h5 mb-3">Customer</h2>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.customer_name.id_for_label }}">Customer name</label>
+          {{ form.customer_name }}
+          {{ form.customer_name.errors }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.customer_email.id_for_label }}">Customer email</label>
+          {{ form.customer_email }}
+          {{ form.customer_email.errors }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.customer_phone.id_for_label }}">Customer phone</label>
+          {{ form.customer_phone }}
+          {{ form.customer_phone.errors }}
+        </div>
+      </div>
+
+      <hr class="my-4">
+      <h2 class="h5 mb-3">Pickup person</h2>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.pickup_name.id_for_label }}">Pickup name</label>
+          {{ form.pickup_name }}
+          {{ form.pickup_name.errors }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="{{ form.pickup_phone.id_for_label }}">Pickup phone</label>
+          {{ form.pickup_phone }}
+          {{ form.pickup_phone.errors }}
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="{{ form.special_instructions.id_for_label }}">Notes or special instructions</label>
+          {{ form.special_instructions }}
+          {{ form.special_instructions.errors }}
+        </div>
+      </div>
+
+      <div class="alert alert-info mt-4 mb-4" role="note">
+        <strong>Pickup location:</strong> 569J+3VH, Togafu'afu'a Rd, Apia, Samoa. Payment is cash at the store.
+      </div>
+      <button class="btn btn-accent btn-lg w-100" type="submit"><i class="bi bi-check2-circle me-2" aria-hidden="true"></i>Place pickup order</button>
+    </form>
+  </div>
+  <aside class="col-lg-5">
+    <div class="summary-panel sticky-lg-top sticky-summary">
+      <h2 class="h5 mb-3">Order summary</h2>
+      <div class="list-group list-group-flush mb-3">
+        {% for item in cart %}
+          <div class="list-group-item px-0 d-flex justify-content-between gap-3">
+            <span>{{ item.quantity }} x {{ item.variant.product.name }}<br><small class="text-secondary">{{ item.variant.display_name }}</small></span>
+            <strong>WST {{ item.line_total }}</strong>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="alert alert-success d-flex justify-content-between align-items-center mb-3">
+        <span>Total due at pickup</span>
+        <strong>WST {{ cart.get_total_price }}</strong>
+      </div>
+      <div class="small text-secondary">
+        <p class="mb-1"><i class="bi bi-envelope-check me-1" aria-hidden="true"></i>Confirmation email is sent after order placement.</p>
+        <p class="mb-0"><i class="bi bi-person-check me-1" aria-hidden="true"></i>Family pickup name can be different from the buyer.</p>
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

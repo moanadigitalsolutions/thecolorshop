@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Products | The Color Shop{% endblock %}
+{% block content %}
+<section class="brand-hero mb-4" style="--hero-image: url('{% static 'img/tcs-hero.jpg' %}?v=20260516-0131');">
+  <div class="brand-hero-content">
+    <p class="kicker text-white-50 mb-2">Apia pickup orders</p>
+    <h1 class="display-6 fw-bold text-white mb-3">Great brands. Great products.</h1>
+    <p class="lead text-white-75 mb-4">Paint, varnishes, brushware, and home improvement supplies ready for store pickup.</p>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-light btn-lg" href="#catalog"><i class="bi bi-grid-3x3-gap me-2" aria-hidden="true"></i>Browse products</a>
+      <a class="btn btn-outline-light btn-lg" href="{% url 'cart_detail' %}"><i class="bi bi-bag me-2" aria-hidden="true"></i>View cart</a>
+    </div>
+  </div>
+  <div class="brand-hero-strip" aria-label="Store details">
+    <span><i class="bi bi-shop me-1" aria-hidden="true"></i>Pickup only</span>
+    <span><i class="bi bi-cash-coin me-1" aria-hidden="true"></i>Cash at store</span>
+    <span><i class="bi bi-geo-alt me-1" aria-hidden="true"></i>Apia, Samoa</span>
+  </div>
+</section>
+
+<section id="catalog" class="mb-4">
+  <div class="section-header">
+    <div>
+      <p class="kicker mb-1">Catalogue</p>
+      <h2 class="h3 mb-0">Available for pickup</h2>
+    </div>
+    <span class="badge text-bg-light border rounded-pill px-3 py-2">{{ products|length }} product{{ products|length|pluralize }}</span>
+  </div>
+
+  <form class="filter-panel row g-3 align-items-end mb-4" method="get">
+    <div class="col-lg-6">
+      <label class="form-label fw-semibold" for="id_q">Search products</label>
+      <div class="input-group input-group-lg">
+        <span class="input-group-text bg-white"><i class="bi bi-search" aria-hidden="true"></i></span>
+        <input class="form-control" id="id_q" type="search" name="q" value="{{ request.GET.q }}" placeholder="Product, SKU, color, finish">
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <label class="form-label fw-semibold" for="id_category">Category</label>
+      <select class="form-select form-select-lg" id="id_category" name="category">
+        <option value="">All categories</option>
+        {% for category in categories %}
+          <option value="{{ category.slug }}" {% if request.GET.category == category.slug %}selected{% endif %}>{{ category.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-lg-2 d-grid">
+      <button class="btn btn-dark btn-lg" type="submit">Filter</button>
+    </div>
+  </form>
+</section>
+
+<div class="product-grid">
+  {% for product in products %}
+    <article class="product-card">
+      <a class="product-image" href="{{ product.get_absolute_url }}" aria-label="View {{ product.name }}">
+        {% if product.image %}
+          <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+        {% else %}
+          <span>{{ product.category.name }}</span>
+        {% endif %}
+      </a>
+      <div class="product-body">
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+          <span class="badge text-bg-light border">{{ product.category.name }}</span>
+          {% if product.starting_price %}
+            <span class="stock-badge stock-in">In stock</span>
+          {% else %}
+            <span class="stock-badge stock-out">Ask in store</span>
+          {% endif %}
+        </div>
+        <h3 class="h5 mb-2"><a href="{{ product.get_absolute_url }}">{{ product.name }}</a></h3>
+        <p class="text-secondary product-description mb-3">{{ product.description|default:'Available for pickup from The Color Shop.'|truncatechars:118 }}</p>
+        <div class="mt-auto d-flex justify-content-between align-items-center gap-3">
+          <div>
+            <small class="text-secondary d-block">Starting at</small>
+            <strong class="fs-5">{% if product.starting_price %}WST {{ product.starting_price }}{% else %}Contact store{% endif %}</strong>
+          </div>
+          <a class="btn btn-accent" href="{{ product.get_absolute_url }}">Choose</a>
+        </div>
+      </div>
+    </article>
+  {% empty %}
+    <div class="empty-state grid-column-full">
+      <i class="bi bi-search display-6 d-block mb-3" aria-hidden="true"></i>
+      <h2 class="h4 text-dark">No products matched your filters.</h2>
+      <p class="mb-0">Try another category, SKU, color, or finish.</p>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

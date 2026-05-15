@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Cart | The Color Shop{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'product_list' %}">Products</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Cart</li>
+  </ol>
+</nav>
+
+<div class="section-header">
+  <div>
+    <p class="kicker mb-1">Pickup order</p>
+    <h1 class="h2 mb-1">Cart</h1>
+    <p class="text-secondary mb-0">Review your items before pickup checkout.</p>
+  </div>
+  <a class="btn btn-outline-dark" href="{% url 'product_list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Continue shopping</a>
+</div>
+
+{% if cart.is_empty %}
+  <div class="empty-state">
+    <i class="bi bi-bag display-6 d-block mb-3" aria-hidden="true"></i>
+    <h2 class="h4 text-dark">Your cart is empty.</h2>
+    <p>Choose paint, finishes, or supplies to begin a pickup order.</p>
+    <a class="btn btn-accent" href="{% url 'product_list' %}">Browse products</a>
+  </div>
+{% else %}
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="d-grid gap-3">
+        {% for item in cart %}
+          <article class="order-card p-3">
+            <div class="d-flex flex-column flex-md-row gap-3 align-items-md-center">
+              <div class="cart-thumb">
+                {% if item.variant.product.image %}
+                  <img src="{{ item.variant.product.image.url }}" alt="{{ item.variant.product.name }}">
+                {% else %}
+                  <i class="bi bi-palette" aria-hidden="true"></i>
+                {% endif %}
+              </div>
+              <div class="flex-grow-1">
+                <div class="d-flex flex-column flex-sm-row justify-content-between gap-2">
+                  <div>
+                    <h2 class="h5 mb-1">{{ item.variant.product.name }}</h2>
+                    <div class="d-flex flex-wrap gap-2">
+                      <span class="badge text-bg-light border">{{ item.variant.display_name }}</span>
+                      <span class="badge text-bg-light border">{{ item.variant.sku }}</span>
+                    </div>
+                  </div>
+                  <div class="text-sm-end">
+                    <small class="text-secondary d-block">Line total</small>
+                    <strong class="fs-5">WST {{ item.line_total }}</strong>
+                  </div>
+                </div>
+                <form class="row g-2 align-items-end mt-3" method="post" action="{% url 'cart_update' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="variant_id" value="{{ item.variant.id }}">
+                  <div class="col-7 col-sm-5">
+                    <label class="form-label small fw-semibold" for="quantity_{{ item.variant.id }}">Quantity</label>
+                    <input class="form-control" id="quantity_{{ item.variant.id }}" name="quantity" type="number" min="0" max="{{ item.variant.stock_quantity }}" value="{{ item.quantity }}">
+                  </div>
+                  <div class="col-5 col-sm-auto d-grid">
+                    <button class="btn btn-outline-dark" type="submit">Update</button>
+                  </div>
+                  <div class="col-sm text-sm-end">
+                    <small class="text-secondary">WST {{ item.unit_price }} each</small>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+    <aside class="col-lg-4">
+      <div class="summary-panel sticky-lg-top sticky-summary">
+        <h2 class="h5 mb-3">Order summary</h2>
+        <div class="list-group list-group-flush mb-3">
+          {% for item in cart %}
+            <div class="list-group-item px-0 d-flex justify-content-between gap-3">
+              <span>{{ item.quantity }} x {{ item.variant.product.name }}</span>
+              <strong>WST {{ item.line_total }}</strong>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="alert alert-success d-flex justify-content-between align-items-center mb-3" role="status">
+          <span>Total due at pickup</span>
+          <strong>WST {{ cart.get_total_price }}</strong>
+        </div>
+        <div class="small text-secondary mb-3">
+          <p class="mb-1"><i class="bi bi-shop me-1" aria-hidden="true"></i>Pickup only from Apia store.</p>
+          <p class="mb-0"><i class="bi bi-cash-coin me-1" aria-hidden="true"></i>Pay cash when collecting.</p>
+        </div>
+        <a class="btn btn-accent btn-lg w-100" href="{% url 'checkout' %}">Checkout for pickup</a>
+      </div>
+    </aside>
+  </div>
+{% endif %}
+{% endblock %}

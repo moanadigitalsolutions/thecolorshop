@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Orders | The Color Shop{% endblock %}
+{% block content %}
+<div class="section-header">
+  <div>
+    <p class="kicker mb-1">Order tracking</p>
+    <h1 class="h2 mb-1">Your orders</h1>
+    <p class="text-secondary mb-0">Track pickup payment, ready-for-pickup, and completed orders.</p>
+  </div>
+  <a class="btn btn-outline-dark" href="{% url 'product_list' %}">Shop again</a>
+</div>
+
+{% if orders %}
+  <div class="d-grid gap-3">
+    {% for order in orders %}
+      <article class="order-card p-3">
+        <a class="d-flex flex-column flex-lg-row justify-content-between gap-3" href="{% url 'order_detail' order.order_number %}">
+          <span>
+            <span class="d-flex flex-wrap align-items-center gap-2 mb-2">
+              <strong class="fs-5">{{ order.order_number }}</strong>
+              {% if order.status == 'pending_pickup_payment' %}
+                <span class="status-badge status-pending">{{ order.get_status_display }}</span>
+              {% elif order.status == 'ready_for_pickup' %}
+                <span class="status-badge status-ready">{{ order.get_status_display }}</span>
+              {% elif order.status == 'completed' %}
+                <span class="status-badge status-completed">{{ order.get_status_display }}</span>
+              {% else %}
+                <span class="status-badge status-cancelled">{{ order.get_status_display }}</span>
+              {% endif %}
+            </span>
+            <small class="text-secondary"><i class="bi bi-calendar-event me-1" aria-hidden="true"></i>{{ order.created_at|date:'M j, Y g:i A' }}</small>
+          </span>
+          <span class="text-lg-end">
+            <small class="text-secondary d-block">Total due at pickup</small>
+            <strong class="fs-5">WST {{ order.total }}</strong>
+          </span>
+        </a>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state">
+    <i class="bi bi-receipt display-6 d-block mb-3" aria-hidden="true"></i>
+    <h2 class="h4 text-dark">No orders yet.</h2>
+    <p>Place a pickup order and it will appear here.</p>
+    <a class="btn btn-accent" href="{% url 'product_list' %}">Browse products</a>
+  </div>
+{% endif %}
+{% endblock %}

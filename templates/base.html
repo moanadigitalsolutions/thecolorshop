@@ -1,0 +1,99 @@
+{% load static %}
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}The Color Shop{% endblock %}</title>
+  <meta name="description" content="Pickup-only paint and hardware orders from The Color Shop in Apia, Samoa.">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/site.css' %}?v=20260516-hero-sharp">
+</head>
+<body>
+  <header class="site-header border-bottom bg-white sticky-top">
+    <nav class="navbar navbar-expand-lg py-3" aria-label="Main navigation">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="{% url 'product_list' %}" aria-label="The Color Shop home">
+          <img class="brand-logo" src="{% static 'img/tcs-logo-light.jpg' %}" alt="The Color Shop Company Ltd">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+          <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2 pt-3 pt-lg-0">
+            <li class="nav-item"><a class="nav-link" href="{% url 'product_list' %}"><i class="bi bi-grid me-1" aria-hidden="true"></i>Products</a></li>
+            {% if user.is_authenticated %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'order_history' %}"><i class="bi bi-receipt me-1" aria-hidden="true"></i>Orders</a></li>
+            {% endif %}
+            <li class="nav-item">
+              <a class="btn btn-outline-dark btn-sm cart-pill" href="{% url 'cart_detail' %}">
+                <i class="bi bi-bag me-1" aria-hidden="true"></i>Cart
+                <span class="badge rounded-pill text-bg-dark ms-1">{{ cart_count }}</span>
+              </a>
+            </li>
+            {% if user.is_authenticated %}
+              <li class="nav-item">
+                <form method="post" action="{% url 'logout' %}" class="m-0">{% csrf_token %}<button class="btn btn-sm btn-link nav-link px-lg-2" type="submit">Log out</button></form>
+              </li>
+            {% else %}
+              <li class="nav-item"><a class="btn btn-sm btn-link nav-link px-lg-2" href="{% url 'login' %}">Log in</a></li>
+              <li class="nav-item"><a class="btn btn-sm btn-accent" href="{% url 'signup' %}">Create account</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="page-shell">
+    <div class="container">
+      {% if messages %}
+        <div class="messages" aria-live="polite">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <footer class="site-footer border-top mt-5">
+    <div class="container py-5">
+      <div class="row g-4 align-items-start">
+        <div class="col-lg-5">
+          <img class="footer-logo mb-3" src="{% static 'img/tcs-logo-light.jpg' %}" alt="The Color Shop Company Ltd">
+          <p class="text-secondary mb-3">Paint, finishes, and supplies for pickup orders in Apia. Order online and pay cash at the store.</p>
+          <div class="d-flex flex-wrap gap-2">
+            <span class="badge text-bg-light border"><i class="bi bi-shop me-1" aria-hidden="true"></i>Pickup only</span>
+            <span class="badge text-bg-light border"><i class="bi bi-cash-coin me-1" aria-hidden="true"></i>Cash at store</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <h2 class="h6 footer-heading">Pickup</h2>
+          <p class="small text-secondary mb-2">569J+3VH, Togafu'afu'a Rd, Apia, Samoa</p>
+          <a class="small link-dark" href="tel:+68525577">+68525577</a>
+        </div>
+        <div class="col-sm-6 col-lg-2">
+          <h2 class="h6 footer-heading">Shop</h2>
+          <ul class="list-unstyled small d-grid gap-2 mb-0">
+            <li><a class="link-secondary" href="{% url 'product_list' %}">Products</a></li>
+            <li><a class="link-secondary" href="{% url 'cart_detail' %}">Cart</a></li>
+            {% if user.is_authenticated %}<li><a class="link-secondary" href="{% url 'order_history' %}">Orders</a></li>{% endif %}
+          </ul>
+        </div>
+        <div class="col-lg-2">
+          <h2 class="h6 footer-heading">Phase 1</h2>
+          <p class="small text-secondary mb-0">No shipping, no delivery, no online payment gateway.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
