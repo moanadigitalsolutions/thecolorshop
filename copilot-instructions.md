@@ -35,3 +35,12 @@ Use The Color Shop MVP rules as the baseline for all work in this repository.
 - Fix root causes, not just template symptoms.
 - Keep migrations and compatibility paths explicit when replacing legacy product behavior.
 - Do not introduce new always-on dependencies unless they are clearly justified by the task.
+
+## Release packaging
+- Build cPanel release archives from the repository root with `Set-ExecutionPolicy -Scope Process Bypass; .\scripts\package_release.ps1`.
+- The app archive is `dist/tcs-app-release.zip` and must contain only `config/`, `shop/`, `templates/`, `static/`, `manage.py`, `requirements.txt`, `README.md`, `.env.example`, `.env.production.example`, and `passenger_wsgi.py`.
+- The media bootstrap archive is `dist/tcs-media-bootstrap.zip` and is only emitted when the `media/` tree contains real files for first deployment or curated media refreshes.
+- Never package `.env`, `.venv/`, `db.sqlite3`, `*.sqlite3`, `staticfiles/`, `__pycache__/`, `.git/`, or other local-only artifacts.
+- For cPanel Application Manager, use `passenger_wsgi.py` as the startup file, `application` as the entry point, `/home/USERNAME/colourshop` as the expected app root pattern, and `colourshop.ws` as the production domain baseline unless the task explicitly changes it.
+- For production setup, use `.env.production.example` as the starting template and leave only database and mail credentials blank unless the task explicitly changes that rule.
+- On the current VPS, create the app virtual environment with `/opt/alt/python-internal/bin/python3.11 -m venv venv`, install from `requirements.txt`, and point the `passenger_wsgi.py` shebang at `/home/USERNAME/colourshop/venv/bin/python`.
