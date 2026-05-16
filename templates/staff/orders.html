@@ -1,0 +1,105 @@
+{% extends 'staff/base_admin.html' %}
+{% block title %}Orders | Staff Admin{% endblock %}
+{% block staff_page_title %}Order Maintenance{% endblock %}
+{% block content %}
+  <section class="staff-panel mb-4">
+    <div class="staff-panel-head">
+      <div>
+        <p class="staff-panel-kicker mb-1">Fulfilment workspace</p>
+        <h2 class="h4 mb-0">Track pickup orders, update statuses, and open order details without Django admin.</h2>
+      </div>
+    </div>
+
+    <form class="staff-filter-grid" action="{% url 'staff:orders' %}" method="get">
+      <div>
+        <label class="form-label staff-filter-label" for="staff_order_q">Search</label>
+        <input class="form-control staff-input" id="staff_order_q" type="search" name="q" value="{{ filters.q }}" placeholder="Order, customer, pickup name, SKU">
+      </div>
+      <div>
+        <label class="form-label staff-filter-label" for="staff_order_status">Status</label>
+        <select class="form-select staff-select" id="staff_order_status" name="status">
+          <option value="">All statuses</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="staff-filter-actions">
+        <button class="btn btn-dark rounded-pill px-3" type="submit">Apply</button>
+        <a class="btn btn-outline-dark rounded-pill px-3" href="{% url 'staff:orders' %}">Clear</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="staff-stat-grid mb-4" aria-label="Order metrics">
+    <article class="staff-stat-card tone-blue">
+      <span class="staff-stat-label">Visible orders</span>
+      <strong class="staff-stat-value">{{ order_metrics.visible }}</strong>
+      <span class="staff-stat-helper">Results in the current filter set</span>
+    </article>
+    <article class="staff-stat-card tone-amber">
+      <span class="staff-stat-label">Pending</span>
+      <strong class="staff-stat-value">{{ order_metrics.pending }}</strong>
+      <span class="staff-stat-helper">Waiting for pickup payment</span>
+    </article>
+    <article class="staff-stat-card tone-teal">
+      <span class="staff-stat-label">Ready</span>
+      <strong class="staff-stat-value">{{ order_metrics.ready }}</strong>
+      <span class="staff-stat-helper">Can be released for pickup</span>
+    </article>
+    <article class="staff-stat-card tone-rose">
+      <span class="staff-stat-label">Completed</span>
+      <strong class="staff-stat-value">{{ order_metrics.completed }}</strong>
+      <span class="staff-stat-helper">Closed pickup orders</span>
+    </article>
+  </section>
+
+  <section class="staff-panel">
+    <div class="staff-panel-head">
+      <div>
+        <p class="staff-panel-kicker mb-1">Order list</p>
+        <h2 class="h4 mb-0">Pickup queue</h2>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table align-middle staff-table mb-0">
+        <thead>
+          <tr>
+            <th scope="col">Order</th>
+            <th scope="col">Customer</th>
+            <th scope="col">Pickup</th>
+            <th scope="col">Status</th>
+            <th scope="col">Total</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+            <tr>
+              <td>
+                <strong class="d-block">{{ order.order_number }}</strong>
+                <span class="text-secondary small">{{ order.created_at|date:'d M Y g:i A' }}</span>
+              </td>
+              <td>
+                <strong class="d-block">{{ order.customer_name }}</strong>
+                <span class="text-secondary small">{{ order.customer_email }}</span>
+              </td>
+              <td>
+                <strong class="d-block">{{ order.pickup_name }}</strong>
+                <span class="text-secondary small">{{ order.pickup_location }}</span>
+              </td>
+              <td><span class="staff-status-pill status-{{ order.status }}">{{ order.get_status_display }}</span></td>
+              <td>WST {{ order.total }}</td>
+              <td><a class="staff-table-link" href="{% url 'staff:order_detail' order.order_number %}">Open</a></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-secondary py-4">No orders matched the current filters.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

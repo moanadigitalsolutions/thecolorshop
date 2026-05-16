@@ -29,6 +29,7 @@
               {% endif %}
             </span>
             <small class="text-secondary"><i class="bi bi-calendar-event me-1" aria-hidden="true"></i>{{ order.created_at|date:'M j, Y g:i A' }}</small>
+            <small class="text-secondary d-block mt-1"><i class="bi bi-geo-alt me-1" aria-hidden="true"></i>{{ order.pickup_location }}</small>
           </span>
           <span class="text-lg-end">
             <small class="text-secondary d-block">Total due at pickup</small>

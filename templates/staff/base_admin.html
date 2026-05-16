@@ -1,0 +1,104 @@
+{% load static %}
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Staff Admin | The Color Shop{% endblock %}</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/admin.css' %}?v=20260516-staff-shell">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="staff-admin-body">
+  <div class="staff-admin-shell">
+    <aside class="staff-sidebar">
+      <div class="staff-sidebar-brand">
+        <span class="staff-sidebar-kicker">The Color Shop</span>
+        <a class="staff-sidebar-title" href="{% url 'staff:dashboard' %}">Staff</a>
+        <p class="staff-sidebar-copy mb-0">Products, pickup orders, inventory, and daily maintenance.</p>
+      </div>
+
+      <nav class="staff-nav" aria-label="Staff sections">
+        <a class="staff-nav-link {% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}" href="{% url 'staff:dashboard' %}">
+          <i class="bi bi-house-door-fill" aria-hidden="true"></i>
+          <span>Dashboard</span>
+        </a>
+        <a class="staff-nav-link {% if request.resolver_match.url_name == 'products' or request.resolver_match.url_name == 'product_create' or request.resolver_match.url_name == 'product_edit' %}is-active{% endif %}" href="{% url 'staff:products' %}">
+          <i class="bi bi-box-seam" aria-hidden="true"></i>
+          <span>Products</span>
+        </a>
+        <a class="staff-nav-link {% if request.resolver_match.url_name == 'locations' or request.resolver_match.url_name == 'location_edit' %}is-active{% endif %}" href="{% url 'staff:locations' %}">
+          <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+          <span>Locations</span>
+        </a>
+        <a class="staff-nav-link" href="{% url 'admin:shop_productvariant_changelist' %}">
+          <i class="bi bi-palette2" aria-hidden="true"></i>
+          <span>Variants</span>
+        </a>
+        <a class="staff-nav-link {% if request.resolver_match.url_name == 'orders' or request.resolver_match.url_name == 'order_detail' %}is-active{% endif %}" href="{% url 'staff:orders' %}">
+          <i class="bi bi-receipt-cutoff" aria-hidden="true"></i>
+          <span>Orders</span>
+        </a>
+        <a class="staff-nav-link {% if request.resolver_match.url_name == 'customers' %}is-active{% endif %}" href="{% url 'staff:customers' %}">
+          <i class="bi bi-people-fill" aria-hidden="true"></i>
+          <span>Customers</span>
+        </a>
+        <a class="staff-nav-link {% if request.resolver_match.url_name == 'email_logs' %}is-active{% endif %}" href="{% url 'staff:email_logs' %}">
+          <i class="bi bi-envelope-paper-fill" aria-hidden="true"></i>
+          <span>Email logs</span>
+        </a>
+      </nav>
+
+      <div class="staff-sidebar-footer">
+        <a class="staff-sidebar-link" href="{% url 'product_list' %}"><i class="bi bi-shop-window" aria-hidden="true"></i>View storefront</a>
+        <a class="staff-sidebar-link" href="{% url 'admin:index' %}"><i class="bi bi-sliders" aria-hidden="true"></i>Django admin</a>
+      </div>
+    </aside>
+
+    <div class="staff-main">
+      <header class="staff-topbar">
+        <div class="staff-topbar-leading">
+          <div>
+            <p class="staff-topbar-kicker mb-1">Operations</p>
+            <h1 class="staff-topbar-title mb-0">{% block staff_page_title %}Staff Dashboard{% endblock %}</h1>
+          </div>
+          {% block staff_topbar_state %}{% endblock %}
+        </div>
+        <div class="staff-topbar-actions">
+          {% block staff_topbar_actions %}
+          <div class="staff-topbar-chip">
+            <i class="bi bi-person-badge-fill" aria-hidden="true"></i>
+            <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+          </div>
+          <a class="btn btn-outline-light btn-sm rounded-pill px-3" href="{% url 'staff:product_create' %}">Add product</a>
+          <form method="post" action="{% url 'logout' %}" class="m-0">
+            {% csrf_token %}
+            <button class="btn btn-light btn-sm rounded-pill px-3" type="submit">Log out</button>
+          </form>
+          {% endblock %}
+        </div>
+      </header>
+
+      <main class="staff-content">
+        {% if messages %}
+          <div class="mb-4">
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags|default:'info' }} shadow-sm border-0" role="alert">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

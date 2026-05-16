@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}The Color Shop{% endblock %}</title>
-  <meta name="description" content="Pickup-only paint and hardware orders from The Color Shop in Apia, Samoa.">
+  <meta name="description" content="{% block meta_description %}Pickup-only paint and hardware orders from The Color Shop in Apia, Samoa.{% endblock %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -26,7 +26,16 @@
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="mainNav">
-          {% block navbar_search %}{% endblock %}
+          <div class="navbar-search-shell d-none d-lg-flex" data-navbar-search-shell>
+            <form class="navbar-product-search" action="{% url 'product_list' %}" method="get" autocomplete="off" role="search" data-product-search-form="nav">
+              <label class="visually-hidden" for="nav_search_q">Search products</label>
+              <span class="navbar-search-icon" aria-hidden="true"><i class="bi bi-search"></i></span>
+              <input class="form-control border-0 shadow-none" id="nav_search_q" type="search" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search products" data-search-input>
+              <input type="hidden" name="category" value="{{ request.GET.category|default:'' }}" data-search-category-mirror>
+              <button class="btn btn-dark btn-sm rounded-pill px-3" type="submit">Search</button>
+              <div class="search-suggestions search-suggestions-navbar" data-search-suggestions hidden></div>
+            </form>
+          </div>
           <ul class="navbar-nav ms-auto align-items-lg-center nav-action-list pt-3 pt-lg-0">
             {% if user.is_authenticated %}
               <li class="nav-item"><a class="nav-link" href="{% url 'order_history' %}"><i class="bi bi-receipt me-1" aria-hidden="true"></i>Orders</a></li>

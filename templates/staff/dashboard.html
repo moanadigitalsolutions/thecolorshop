@@ -1,0 +1,200 @@
+{% extends 'staff/base_admin.html' %}
+{% block title %}Dashboard | Staff Admin{% endblock %}
+{% block staff_page_title %}Dashboard Overview{% endblock %}
+{% block content %}
+  <section class="staff-hero-panel mb-4">
+    <div>
+      <p class="staff-hero-kicker mb-2">Shopify-style operations layer</p>
+      <h2 class="staff-hero-title mb-2">Maintain products, track pickup orders, and watch inventory from one screen.</h2>
+      <p class="staff-hero-copy mb-0">This first staff view sits on top of the current Django data model and admin actions. Use it as the new control room while deeper product and order editors are rolled out.</p>
+    </div>
+    <div class="staff-hero-actions">
+      <a class="btn btn-dark rounded-pill px-3" href="{% url 'staff:orders' %}">Review orders</a>
+      <a class="btn btn-outline-dark rounded-pill px-3" href="{% url 'staff:products' %}">Open products</a>
+    </div>
+  </section>
+
+  <section class="staff-stat-grid mb-4" aria-label="Key metrics">
+    <article class="staff-stat-card tone-blue">
+      <span class="staff-stat-label">Active products</span>
+      <strong class="staff-stat-value">{{ metrics.active_products }}</strong>
+      <span class="staff-stat-helper">Live catalogue entries available to customers</span>
+    </article>
+    <article class="staff-stat-card tone-teal">
+      <span class="staff-stat-label">Active variants</span>
+      <strong class="staff-stat-value">{{ metrics.active_variants }}</strong>
+      <span class="staff-stat-helper">Sellable SKUs carrying inventory and price</span>
+    </article>
+    <article class="staff-stat-card tone-amber">
+      <span class="staff-stat-label">Low stock</span>
+      <strong class="staff-stat-value">{{ metrics.low_stock_variants }}</strong>
+      <span class="staff-stat-helper">Variants nearing their reorder threshold</span>
+    </article>
+    <article class="staff-stat-card tone-rose">
+      <span class="staff-stat-label">Email attention</span>
+      <strong class="staff-stat-value">{{ metrics.email_attention }}</strong>
+      <span class="staff-stat-helper">Failed or skipped customer emails to review</span>
+    </article>
+  </section>
+
+  <div class="row g-4 mb-4">
+    <div class="col-xl-8">
+      <section class="staff-panel h-100">
+        <div class="staff-panel-head">
+          <div>
+            <p class="staff-panel-kicker mb-1">Fulfilment</p>
+            <h2 class="h4 mb-0">Pickup order pipeline</h2>
+          </div>
+          <a class="staff-panel-link" href="{% url 'staff:orders' %}">Open all orders</a>
+        </div>
+
+        <div class="staff-flow-grid mb-4">
+          {% for group in order_groups %}
+            <article class="staff-flow-card tone-{{ group.status_class }}">
+              <span class="staff-flow-label">{{ group.label }}</span>
+              <strong class="staff-flow-value">{{ group.count }}</strong>
+              <span class="staff-flow-helper">{{ group.helper }}</span>
+            </article>
+          {% endfor %}
+        </div>
+
+        <div class="table-responsive">
+          <table class="table align-middle staff-table mb-0">
+            <thead>
+              <tr>
+                <th scope="col">Order</th>
+                <th scope="col">Customer</th>
+                <th scope="col">Status</th>
+                <th scope="col">Total</th>
+                <th scope="col">Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for order in recent_orders %}
+                <tr>
+                  <td><a class="staff-table-link" href="{% url 'staff:order_detail' order.order_number %}">{{ order.order_number }}</a></td>
+                  <td>
+                    <strong class="d-block">{{ order.customer_name }}</strong>
+                    <span class="text-secondary small">{{ order.pickup_name }}</span>
+                  </td>
+                  <td>
+                    <span class="staff-status-pill status-{{ order.status }}">{{ order.get_status_display }}</span>
+                  </td>
+                  <td>WST {{ order.total }}</td>
+                  <td>{{ order.created_at|date:'d M Y' }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="text-secondary py-4">No orders yet.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-xl-4">
+      <section class="staff-panel h-100">
+        <div class="staff-panel-head">
+          <div>
+            <p class="staff-panel-kicker mb-1">Quick actions</p>
+            <h2 class="h4 mb-0">Operations shortcuts</h2>
+          </div>
+        </div>
+
+        <div class="staff-quick-grid">
+          <a class="staff-quick-card" href="{% url 'staff:product_create' %}">
+            <i class="bi bi-plus-square-fill" aria-hidden="true"></i>
+            <span>Add product</span>
+            <small>Create a new catalogue entry with variants</small>
+          </a>
+          <a class="staff-quick-card" href="{% url 'admin:shop_productvariant_changelist' %}">
+            <i class="bi bi-boxes" aria-hidden="true"></i>
+            <span>Adjust variants</span>
+            <small>Update SKU, finish, stock, and pricing</small>
+          </a>
+          <a class="staff-quick-card" href="{% url 'staff:locations' %}">
+            <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+            <span>Manage locations</span>
+            <small>Control pickup points and inventory locations</small>
+          </a>
+          <a class="staff-quick-card" href="{% url 'staff:orders' %}">
+            <i class="bi bi-bag-check-fill" aria-hidden="true"></i>
+            <span>Manage orders</span>
+            <small>Update pickup statuses and review customer info</small>
+          </a>
+          <a class="staff-quick-card" href="{% url 'staff:email_logs' %}">
+            <i class="bi bi-envelope-exclamation-fill" aria-hidden="true"></i>
+            <span>Review email logs</span>
+            <small>Check failed or skipped notifications</small>
+          </a>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <section class="staff-panel h-100">
+        <div class="staff-panel-head">
+          <div>
+            <p class="staff-panel-kicker mb-1">Inventory</p>
+            <h2 class="h4 mb-0">Stock watch</h2>
+          </div>
+          <a class="staff-panel-link" href="{% url 'admin:shop_productvariant_changelist' %}">Open variants</a>
+        </div>
+
+        <div class="staff-mini-metrics mb-4">
+          {% for alert in inventory_alerts %}
+            <div class="staff-mini-metric tone-{{ alert.tone }}">
+              <span>{{ alert.label }}</span>
+              <strong>{{ alert.count }}</strong>
+              <small>{{ alert.helper }}</small>
+            </div>
+          {% endfor %}
+        </div>
+
+        <ul class="staff-list mb-0">
+          {% for variant in low_stock_variants %}
+            <li class="staff-list-item">
+              <div>
+                <strong class="d-block">{{ variant.product.name }}</strong>
+                <span class="text-secondary small">{{ variant.display_name }} · {{ variant.sku }}</span>
+              </div>
+              <span class="staff-status-pill status-low-stock">{{ variant.stock_quantity }} left</span>
+            </li>
+          {% empty %}
+            <li class="staff-list-item is-empty">No low-stock variants right now.</li>
+          {% endfor %}
+        </ul>
+      </section>
+    </div>
+
+    <div class="col-lg-6">
+      <section class="staff-panel h-100">
+        <div class="staff-panel-head">
+          <div>
+            <p class="staff-panel-kicker mb-1">Communication</p>
+            <h2 class="h4 mb-0">Email attention queue</h2>
+          </div>
+          <a class="staff-panel-link" href="{% url 'staff:email_logs' %}">Open logs</a>
+        </div>
+
+        <ul class="staff-list mb-0">
+          {% for email_log in email_attention_logs %}
+            <li class="staff-list-item">
+              <div>
+                <strong class="d-block">{{ email_log.recipient }}</strong>
+                <span class="text-secondary small">{{ email_log.template_key }}{% if email_log.order %} · {{ email_log.order.order_number }}{% endif %}</span>
+              </div>
+              <span class="staff-status-pill status-{{ email_log.status }}">{{ email_log.get_status_display }}</span>
+            </li>
+          {% empty %}
+            <li class="staff-list-item is-empty">No email delivery issues right now.</li>
+          {% endfor %}
+        </ul>
+      </section>
+    </div>
+  </div>
+{% endblock %}

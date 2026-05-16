@@ -1,0 +1,131 @@
+{% extends 'staff/base_admin.html' %}
+{% block title %}Locations | Staff Admin{% endblock %}
+{% block staff_page_title %}Pickup Locations{% endblock %}
+{% block staff_topbar_state %}
+  <span class="staff-topbar-state">{% if editing_location %}Editing location{% else %}Location maintenance{% endif %}</span>
+{% endblock %}
+{% block staff_topbar_actions %}
+  {% if editing_location %}
+    <a class="btn btn-outline-light btn-sm rounded-pill px-3" href="{% url 'staff:locations' %}">Cancel</a>
+    <button class="btn btn-light btn-sm rounded-pill px-3" type="submit" form="location-form">Save</button>
+  {% else %}
+    <a class="btn btn-outline-light btn-sm rounded-pill px-3" href="{% url 'admin:shop_storelocation_changelist' %}">Fallback admin</a>
+    <button class="btn btn-light btn-sm rounded-pill px-3" type="submit" form="location-form">Save</button>
+  {% endif %}
+{% endblock %}
+{% block content %}
+  <section class="staff-panel mb-4">
+    <div class="staff-panel-head">
+      <div>
+        <p class="staff-panel-kicker mb-1">Pickup network</p>
+        <h2 class="h4 mb-0">Maintain store locations used in checkout and inventory.</h2>
+      </div>
+    </div>
+  </section>
+
+  <section class="staff-stat-grid mb-4" aria-label="Location metrics">
+    <article class="staff-stat-card tone-blue">
+      <span class="staff-stat-label">Total locations</span>
+      <strong class="staff-stat-value">{{ location_metrics.total }}</strong>
+      <span class="staff-stat-helper">Configured store and stock points</span>
+    </article>
+    <article class="staff-stat-card tone-teal">
+      <span class="staff-stat-label">Pickup enabled</span>
+      <strong class="staff-stat-value">{{ location_metrics.pickup_enabled }}</strong>
+      <span class="staff-stat-helper">Available to customers at checkout</span>
+    </article>
+    <article class="staff-stat-card tone-rose">
+      <span class="staff-stat-label">Inactive</span>
+      <strong class="staff-stat-value">{{ location_metrics.inactive }}</strong>
+      <span class="staff-stat-helper">Hidden from pickup selection</span>
+    </article>
+  </section>
+
+  <div class="row g-4">
+    <div class="col-xl-5">
+      <section class="staff-editor-card h-100">
+        <div class="staff-editor-card-head">
+          <div>
+            <h2 class="h5 mb-1">{% if editing_location %}Edit location{% else %}Add location{% endif %}</h2>
+            <p class="staff-input-helper mb-0">Define the address, pickup availability, and sort order used across staff and checkout.</p>
+          </div>
+        </div>
+        <form id="location-form" method="post" class="staff-form-stack mt-3">
+          {% csrf_token %}
+          {% for error in location_form.non_field_errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+          <div>
+            <label class="form-label staff-filter-label" for="{{ location_form.name.id_for_label }}">Location name</label>
+            {{ location_form.name }}
+            {% for error in location_form.name.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+          </div>
+          <div>
+            <label class="form-label staff-filter-label" for="{{ location_form.address.id_for_label }}">Address</label>
+            {{ location_form.address }}
+            {% for error in location_form.address.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+          </div>
+          <div>
+            <label class="form-label staff-filter-label" for="{{ location_form.pickup_instructions.id_for_label }}">Pickup instructions</label>
+            {{ location_form.pickup_instructions }}
+            {% for error in location_form.pickup_instructions.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+          </div>
+          <div>
+            <label class="form-label staff-filter-label" for="{{ location_form.sort_order.id_for_label }}">Sort order</label>
+            {{ location_form.sort_order }}
+            {% for error in location_form.sort_order.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+          </div>
+          <label class="staff-toggle-row">{{ location_form.is_active }}<span>Active in staff tools</span></label>
+          <label class="staff-toggle-row">{{ location_form.is_pickup_enabled }}<span>Available for pickup checkout</span></label>
+        </form>
+      </section>
+    </div>
+
+    <div class="col-xl-7">
+      <section class="staff-panel h-100">
+        <div class="staff-panel-head">
+          <div>
+            <p class="staff-panel-kicker mb-1">Current locations</p>
+            <h2 class="h4 mb-0">Store and inventory points</h2>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table align-middle staff-table mb-0">
+            <thead>
+              <tr>
+                <th scope="col">Location</th>
+                <th scope="col">Address</th>
+                <th scope="col">Status</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for location in locations %}
+                <tr>
+                  <td>
+                    <strong class="d-block">{{ location.name }}</strong>
+                    {% if location.pickup_instructions %}<span class="text-secondary small">{{ location.pickup_instructions }}</span>{% endif %}
+                  </td>
+                  <td>{{ location.address }}</td>
+                  <td>
+                    {% if location.is_active and location.is_pickup_enabled %}
+                      <span class="staff-status-pill status-completed">Pickup enabled</span>
+                    {% elif location.is_active %}
+                      <span class="staff-status-pill status-ready_for_pickup">Internal only</span>
+                    {% else %}
+                      <span class="staff-status-pill status-cancelled">Inactive</span>
+                    {% endif %}
+                  </td>
+                  <td><a class="staff-table-link" href="{% url 'staff:location_edit' location.pk %}">Edit</a></td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-secondary py-4">No locations configured yet.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+{% endblock %}

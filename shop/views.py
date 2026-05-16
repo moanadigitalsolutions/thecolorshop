@@ -15,6 +15,8 @@ from .services import create_order_from_cart, send_order_confirmation
 
 def get_product_search_results(query='', category_slug=''):
     products = Product.objects.filter(is_active=True).select_related('category').prefetch_related(
+        'media_assets',
+        'pickup_locations',
         Prefetch('variants', queryset=ProductVariant.objects.filter(is_active=True).order_by('price'))
     )
     selected_category = None
@@ -25,6 +27,8 @@ def get_product_search_results(query='', category_slug=''):
             | Q(description__icontains=query)
             | Q(variants__sku__icontains=query)
             | Q(variants__color__icontains=query)
+            | Q(variants__selected_options__option__name__icontains=query)
+            | Q(variants__selected_options__option_value__value__icontains=query)
             | Q(variants__finish__icontains=query)
         ).distinct()
 
@@ -40,7 +44,7 @@ def serialize_product_search_results(products):
     product_cards = []
 
     for product in products:
-        image_url = product.image.url if product.image else ''
+        image_url = product.primary_image_url
         product_cards.append(
             {
                 'name': product.name,
@@ -112,12 +116,16 @@ def product_search_api(request):
 
 def product_detail(request, slug):
     product = get_object_or_404(
-        Product.objects.select_related('category').prefetch_related('variants'),
+        Product.objects.select_related('category').prefetch_related('media_assets', 'pickup_locations', 'variants__inventory_levels__location', 'variants'),
         slug=slug,
         is_active=True,
     )
     variants = product.variants.filter(is_active=True)
-    return render(request, 'shop/product_detail.html', {'product': product, 'variants': variants})
+    return render(
+        request,
+        'shop/product_detail.html',
+        {'product': product, 'variants': variants, 'gallery_media': product.gallery_media},
+    )
 
 
 def cart_detail(request):

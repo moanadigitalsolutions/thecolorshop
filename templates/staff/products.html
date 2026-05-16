@@ -1,0 +1,168 @@
+{% extends 'staff/base_admin.html' %}
+{% block title %}Products | Staff Admin{% endblock %}
+{% block staff_page_title %}Product Maintenance{% endblock %}
+{% block content %}
+  <section class="staff-panel mb-4">
+    <div class="staff-panel-head">
+      <div>
+        <p class="staff-panel-kicker mb-1">Catalogue workspace</p>
+        <h2 class="h4 mb-0">Browse products, filter quickly, and jump into edit flows.</h2>
+      </div>
+      <a class="btn btn-dark rounded-pill px-3" href="{% url 'staff:product_create' %}">Add product</a>
+    </div>
+
+    <form class="staff-filter-grid" action="{% url 'staff:products' %}" method="get">
+      <div>
+        <label class="form-label staff-filter-label" for="staff_q">Search</label>
+        <input class="form-control staff-input" id="staff_q" type="search" name="q" value="{{ filters.q }}" placeholder="Product, SKU, finish, color">
+      </div>
+      <div>
+        <label class="form-label staff-filter-label" for="staff_category">Category</label>
+        <select class="form-select staff-select" id="staff_category" name="category">
+          <option value="">All categories</option>
+          {% for category in categories %}
+            <option value="{{ category.slug }}" {% if filters.category == category.slug %}selected{% endif %}>{{ category.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label staff-filter-label" for="staff_status">Status</label>
+        <select class="form-select staff-select" id="staff_status" name="status">
+          <option value="">All products</option>
+          <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active only</option>
+          <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactive only</option>
+          <option value="featured" {% if filters.status == 'featured' %}selected{% endif %}>Featured only</option>
+        </select>
+      </div>
+      <div class="staff-filter-actions">
+        <button class="btn btn-dark rounded-pill px-3" type="submit">Apply</button>
+        <a class="btn btn-outline-dark rounded-pill px-3" href="{% url 'staff:products' %}">Clear</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="staff-stat-grid mb-4" aria-label="Product metrics">
+    <article class="staff-stat-card tone-blue">
+      <span class="staff-stat-label">Visible products</span>
+      <strong class="staff-stat-value">{{ product_metrics.visible }}</strong>
+      <span class="staff-stat-helper">Results in the current filter set</span>
+    </article>
+    <article class="staff-stat-card tone-teal">
+      <span class="staff-stat-label">Featured</span>
+      <strong class="staff-stat-value">{{ product_metrics.featured }}</strong>
+      <span class="staff-stat-helper">Products promoted on the storefront</span>
+    </article>
+    <article class="staff-stat-card tone-amber">
+      <span class="staff-stat-label">Needs attention</span>
+      <strong class="staff-stat-value">{{ product_metrics.attention }}</strong>
+      <span class="staff-stat-helper">Products with low-stock or out-of-stock variants</span>
+    </article>
+    <article class="staff-stat-card tone-rose">
+      <span class="staff-stat-label">Inactive</span>
+      <strong class="staff-stat-value">{{ product_metrics.inactive }}</strong>
+      <span class="staff-stat-helper">Products hidden from the live catalogue</span>
+    </article>
+  </section>
+
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <section class="staff-panel h-100">
+        <div class="staff-panel-head">
+          <div>
+            <p class="staff-panel-kicker mb-1">Catalogue list</p>
+            <h2 class="h4 mb-0">Products and variant readiness</h2>
+          </div>
+          <a class="staff-panel-link" href="{% url 'admin:shop_product_changelist' %}">Fallback admin</a>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table align-middle staff-table mb-0">
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col">Category</th>
+                <th scope="col">Variants</th>
+                <th scope="col">Starting price</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in product_rows %}
+                <tr>
+                  <td>
+                    <strong class="d-block">{{ row.product.name }}</strong>
+                    <div class="staff-inline-pills mt-2">
+                      <span class="staff-status-pill {% if row.product.is_active %}status-completed{% else %}status-cancelled{% endif %}">
+                        {% if row.product.is_active %}Active{% else %}Inactive{% endif %}
+                      </span>
+                      {% if row.product.is_featured %}
+                        <span class="staff-status-pill status-ready_for_pickup">Featured</span>
+                      {% endif %}
+                      {% if row.stock_state == 'at-risk' %}
+                        <span class="staff-status-pill status-low-stock">Attention</span>
+                      {% endif %}
+                    </div>
+                    {% if row.variant_preview %}
+                      <div class="staff-variant-preview mt-2">
+                        {% for variant in row.variant_preview %}
+                          <span>{{ variant.display_name }}</span>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                  </td>
+                  <td>{{ row.product.category.name }}</td>
+                  <td>
+                    <strong class="d-block">{{ row.active_variant_count }} active</strong>
+                    <span class="text-secondary small">{{ row.low_stock_count }} low stock · {{ row.out_of_stock_count }} out of stock</span>
+                  </td>
+                  <td>
+                    {% if row.product.starting_price %}
+                      WST {{ row.product.starting_price }}
+                    {% else %}
+                      <span class="text-secondary">No active price</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="staff-action-stack">
+                      <a class="staff-table-link" href="{% url 'staff:product_edit' row.product.pk %}">Edit product</a>
+                      <a class="staff-table-link" href="{{ row.product.get_absolute_url }}">Preview</a>
+                    </div>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="text-secondary py-4">No products matched the current filters.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-xl-4">
+      <section class="staff-panel h-100">
+        <div class="staff-panel-head">
+          <div>
+            <p class="staff-panel-kicker mb-1">Attention list</p>
+            <h2 class="h4 mb-0">Products at risk</h2>
+          </div>
+        </div>
+
+        <ul class="staff-list mb-0">
+          {% for row in at_risk_products %}
+            <li class="staff-list-item">
+              <div>
+                <strong class="d-block">{{ row.product.name }}</strong>
+                <span class="text-secondary small">{{ row.low_stock_count }} low stock · {{ row.out_of_stock_count }} out of stock</span>
+              </div>
+              <a class="staff-panel-link" href="{% url 'staff:product_edit' row.product.pk %}">Open</a>
+            </li>
+          {% empty %}
+            <li class="staff-list-item is-empty">All visible products are currently healthy.</li>
+          {% endfor %}
+        </ul>
+      </section>
+    </div>
+  </div>
+{% endblock %}

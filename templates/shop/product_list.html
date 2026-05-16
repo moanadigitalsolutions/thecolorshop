@@ -2,18 +2,6 @@
 {% load static %}
 {% block title %}Products | The Color Shop{% endblock %}
 {% block body_class %}product-list-page{% endblock %}
-{% block navbar_search %}
-  <div class="navbar-search-shell d-none d-lg-flex" data-navbar-search-shell>
-    <form class="navbar-product-search" action="{% url 'product_list' %}" method="get" autocomplete="off" role="search" data-product-search-form="nav">
-      <label class="visually-hidden" for="nav_search_q">Search products</label>
-      <span class="navbar-search-icon" aria-hidden="true"><i class="bi bi-search"></i></span>
-      <input class="form-control border-0 shadow-none" id="nav_search_q" type="search" name="q" value="{{ request.GET.q }}" placeholder="Search products" data-search-input>
-      <input type="hidden" name="category" value="{{ request.GET.category }}" data-search-category-mirror>
-      <button class="btn btn-dark btn-sm rounded-pill px-3" type="submit">Search</button>
-      <div class="search-suggestions search-suggestions-navbar" data-search-suggestions hidden></div>
-    </form>
-  </div>
-{% endblock %}
 {% block content %}
 <form class="catalog-search-form" action="{% url 'product_list' %}" method="get" data-product-search-root data-product-search-form="hero" data-search-api-url="{% url 'product_search_api' %}">
   <section class="brand-hero mb-4" style="--hero-image: url('{% static 'img/tcs-hero.jpg' %}?v=20260516-0131');">
@@ -41,6 +29,44 @@
           <li><i class="bi bi-cash-coin" aria-hidden="true"></i>Cash at store</li>
           <li><i class="bi bi-clock" aria-hidden="true"></i>Mon–Sat</li>
         </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="brand-carousel-section mb-4" aria-labelledby="brands-carousel-title">
+    <h2 class="visually-hidden" id="brands-carousel-title">Brands we sell</h2>
+
+    <div id="brandCarousel" class="carousel slide brand-carousel" data-bs-ride="carousel" data-bs-interval="4200" data-bs-pause="hover" data-bs-touch="true">
+      <div class="carousel-inner overflow-visible">
+        <div class="carousel-item active">
+          <div class="brand-carousel-slide-grid">
+            <article class="brand-mini-card brand-logo-tile">
+              <img class="brand-logo-image brand-logo-image-axalta" src="{% static 'img/brands/axalta.png' %}" alt="Axalta logo" loading="lazy">
+            </article>
+            <article class="brand-mini-card brand-logo-tile">
+              <img class="brand-logo-image brand-logo-image-crc" src="{% static 'img/brands/crc.png' %}" alt="CRC logo" loading="lazy">
+            </article>
+            <article class="brand-mini-card brand-logo-tile">
+              <img class="brand-logo-image brand-logo-image-evacut" src="{% static 'img/brands/evacut.png' %}" alt="Evacut logo" loading="lazy">
+            </article>
+            <article class="brand-mini-card brand-logo-tile">
+              <img class="brand-logo-image brand-logo-image-resene" src="{% static 'img/brands/resene.png' %}" alt="Resene logo" loading="lazy">
+            </article>
+          </div>
+        </div>
+        <div class="carousel-item">
+          <div class="brand-carousel-slide-grid brand-carousel-slide-grid-secondary">
+            <article class="brand-mini-card brand-logo-tile">
+              <img class="brand-logo-image brand-logo-image-saint-gobain" src="{% static 'img/brands/saint-gobain.png' %}" alt="Saint-Gobain logo" loading="lazy">
+            </article>
+            <article class="brand-mini-card brand-logo-tile">
+              <img class="brand-logo-image brand-logo-image-ppg" src="{% static 'img/brands/ppg.png' %}" alt="PPG logo" loading="lazy">
+            </article>
+            <article class="brand-mini-card brand-logo-tile">
+              <img class="brand-logo-image brand-logo-image-tall brand-logo-image-canda" src="{% static 'img/brands/c-and-a-australia.png' %}" alt="C&amp;A Australia logo" loading="lazy">
+            </article>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -79,8 +105,8 @@
   {% for product in products %}
     <article class="product-card">
       <a class="product-image" href="{{ product.get_absolute_url }}" aria-label="View {{ product.name }}">
-        {% if product.image %}
-          <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+        {% if product.primary_image_url %}
+          <img src="{{ product.primary_image_url }}" alt="{{ product.name }}" loading="lazy">
         {% else %}
           <span>{{ product.category.name }}</span>
         {% endif %}

@@ -6,7 +6,7 @@ from django.db import transaction
 from django.utils.html import escape
 import requests
 
-from .models import EmailLog, Order, OrderItem, ProductVariant
+from .models import EmailLog, Order, OrderItem, ProductVariant, StoreLocation
 
 
 def create_order_from_cart(user, cart, cleaned_data):
@@ -16,6 +16,7 @@ def create_order_from_cart(user, cart, cleaned_data):
     with transaction.atomic():
         order_items = []
         subtotal = Decimal('0.00')
+        pickup_location = cleaned_data.get('pickup_location_object') or StoreLocation.ensure_default_location()
 
         for variant_id, quantity in cart.quantities().items():
             variant = ProductVariant.objects.select_for_update().select_related('product').get(
@@ -23,9 +24,10 @@ def create_order_from_cart(user, cart, cleaned_data):
                 is_active=True,
                 product__is_active=True,
             )
-            if quantity > variant.stock_quantity:
-                raise ValidationError(f'Only {variant.stock_quantity} available for {variant.sku}.')
-            subtotal += variant.price * quantity
+            available_quantity = variant.quantity_at_location(pickup_location)
+            if quantity > available_quantity:
+                raise ValidationError(f'Only {available_quantity} available for {variant.sku} at {pickup_location.name}.')
+            subtotal += variant.current_price * quantity
             order_items.append((variant, quantity))
 
         order = Order.objects.create(
@@ -35,23 +37,24 @@ def create_order_from_cart(user, cart, cleaned_data):
             customer_phone=cleaned_data.get('customer_phone', ''),
             pickup_name=cleaned_data['pickup_name'],
             pickup_phone=cleaned_data.get('pickup_phone', ''),
-            pickup_address=settings.STORE_PICKUP_ADDRESS,
+            pickup_location=pickup_location.name,
+            pickup_address=pickup_location.address,
             special_instructions=cleaned_data.get('special_instructions', ''),
             subtotal=subtotal,
             total=subtotal,
         )
 
         for variant, quantity in order_items:
-            variant.reserve_stock(quantity)
+            variant.reserve_stock(quantity, location=pickup_location)
             OrderItem.objects.create(
                 order=order,
                 product_variant=variant,
                 product_name=variant.product.name,
                 variant_name=variant.display_name,
                 sku=variant.sku,
-                unit_price=variant.price,
+                unit_price=variant.current_price,
                 quantity=quantity,
-                line_total=variant.price * quantity,
+                line_total=variant.current_price * quantity,
             )
 
     return order

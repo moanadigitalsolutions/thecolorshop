@@ -16,10 +16,12 @@
   const grid = document.querySelector('[data-product-grid]');
   const countBadge = document.querySelector('[data-product-count]');
   const heroSentinel = root.querySelector('[data-hero-search-sentinel]');
+  const brandCarousel = root.querySelector('#brandCarousel');
   const header = document.querySelector('.site-header');
   const inputs = [heroInput, navInput].filter(Boolean);
   const initialGridHtml = grid ? grid.innerHTML : '';
   const initialCountText = countBadge ? countBadge.textContent.trim() : '';
+  const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   let activeContainer = null;
   let activeItems = [];
   let activeIndex = -1;
@@ -365,6 +367,21 @@
     observer.observe(heroSentinel);
   }
 
+  function syncBrandCarouselMotion() {
+    if (!brandCarousel || !window.bootstrap || !window.bootstrap.Carousel) {
+      return;
+    }
+
+    const carousel = window.bootstrap.Carousel.getOrCreateInstance(brandCarousel);
+
+    if (reducedMotionQuery.matches) {
+      carousel.pause();
+      return;
+    }
+
+    carousel.cycle();
+  }
+
   inputs.forEach(function (input) {
     input.addEventListener('focus', function () {
       clearInactiveSuggestions(input);
@@ -432,6 +449,12 @@
     updateNavbarSearchState();
   });
 
+  if (typeof reducedMotionQuery.addEventListener === 'function') {
+    reducedMotionQuery.addEventListener('change', syncBrandCarouselMotion);
+  } else if (typeof reducedMotionQuery.addListener === 'function') {
+    reducedMotionQuery.addListener(syncBrandCarouselMotion);
+  }
+
   window.addEventListener(
     'scroll',
     function () {
@@ -448,5 +471,6 @@
 
   syncCategoryMirror();
   setupObserver();
+  syncBrandCarouselMotion();
   updateNavbarSearchState();
 })();

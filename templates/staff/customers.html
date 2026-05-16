@@ -1,0 +1,87 @@
+{% extends 'staff/base_admin.html' %}
+{% block title %}Customers | Staff Admin{% endblock %}
+{% block staff_page_title %}Customer Lookup{% endblock %}
+{% block content %}
+  <section class="staff-panel mb-4">
+    <div class="staff-panel-head">
+      <div>
+        <p class="staff-panel-kicker mb-1">Customer workspace</p>
+        <h2 class="h4 mb-0">Search profiles, review pickup contacts, and inspect account details without Django admin.</h2>
+      </div>
+    </div>
+
+    <form class="staff-filter-grid" action="{% url 'staff:customers' %}" method="get">
+      <div>
+        <label class="form-label staff-filter-label" for="staff_customer_q">Search</label>
+        <input class="form-control staff-input" id="staff_customer_q" type="search" name="q" value="{{ filters.q }}" placeholder="Name, email, username, phone, pickup name">
+      </div>
+      <div class="staff-filter-actions">
+        <button class="btn btn-dark rounded-pill px-3" type="submit">Apply</button>
+        <a class="btn btn-outline-dark rounded-pill px-3" href="{% url 'staff:customers' %}">Clear</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="staff-stat-grid mb-4" aria-label="Customer metrics">
+    <article class="staff-stat-card tone-blue">
+      <span class="staff-stat-label">Visible profiles</span>
+      <strong class="staff-stat-value">{{ customer_metrics.visible }}</strong>
+      <span class="staff-stat-helper">Results in the current filter set</span>
+    </article>
+    <article class="staff-stat-card tone-teal">
+      <span class="staff-stat-label">With phone</span>
+      <strong class="staff-stat-value">{{ customer_metrics.with_phone }}</strong>
+      <span class="staff-stat-helper">Profiles with a saved contact number</span>
+    </article>
+    <article class="staff-stat-card tone-amber">
+      <span class="staff-stat-label">Pickup names saved</span>
+      <strong class="staff-stat-value">{{ customer_metrics.with_pickup_name }}</strong>
+      <span class="staff-stat-helper">Profiles with a default pickup contact</span>
+    </article>
+  </section>
+
+  <section class="staff-panel">
+    <div class="staff-panel-head">
+      <div>
+        <p class="staff-panel-kicker mb-1">Customer profiles</p>
+        <h2 class="h4 mb-0">Pickup contact review</h2>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table align-middle staff-table mb-0">
+        <thead>
+          <tr>
+            <th scope="col">Customer</th>
+            <th scope="col">Account</th>
+            <th scope="col">Pickup contact</th>
+            <th scope="col">Orders</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for customer in customers %}
+            <tr>
+              <td>
+                <strong class="d-block">{{ customer.user.get_full_name|default:customer.user.username }}</strong>
+                <span class="text-secondary small">{{ customer.user.email|default:'No email saved' }}</span>
+              </td>
+              <td>
+                <strong class="d-block">{{ customer.user.username }}</strong>
+                <span class="text-secondary small">Updated {{ customer.updated_at|date:'d M Y' }}</span>
+              </td>
+              <td>
+                <strong class="d-block">{{ customer.default_pickup_name|default:'Not set' }}</strong>
+                <span class="text-secondary small">{{ customer.phone_number|default:'No phone saved' }}</span>
+              </td>
+              <td>{{ customer.order_count }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="text-secondary py-4">No customers matched the current search.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

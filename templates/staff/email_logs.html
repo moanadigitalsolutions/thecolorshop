@@ -1,0 +1,115 @@
+{% extends 'staff/base_admin.html' %}
+{% block title %}Email Logs | Staff Admin{% endblock %}
+{% block staff_page_title %}Email Log Review{% endblock %}
+{% block content %}
+  <section class="staff-panel mb-4">
+    <div class="staff-panel-head">
+      <div>
+        <p class="staff-panel-kicker mb-1">Notification workspace</p>
+        <h2 class="h4 mb-0">Review delivery attempts, skipped emails, and linked orders without Django admin.</h2>
+      </div>
+    </div>
+
+    <form class="staff-filter-grid" action="{% url 'staff:email_logs' %}" method="get">
+      <div>
+        <label class="form-label staff-filter-label" for="staff_email_q">Search</label>
+        <input class="form-control staff-input" id="staff_email_q" type="search" name="q" value="{{ filters.q }}" placeholder="Recipient, subject, order, or error">
+      </div>
+      <div>
+        <label class="form-label staff-filter-label" for="staff_email_status">Status</label>
+        <select class="form-select staff-select" id="staff_email_status" name="status">
+          <option value="">All statuses</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label staff-filter-label" for="staff_email_template">Template</label>
+        <select class="form-select staff-select" id="staff_email_template" name="template">
+          <option value="">All templates</option>
+          {% for template_key in template_choices %}
+            <option value="{{ template_key }}" {% if filters.template == template_key %}selected{% endif %}>{{ template_key }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="staff-filter-actions">
+        <button class="btn btn-dark rounded-pill px-3" type="submit">Apply</button>
+        <a class="btn btn-outline-dark rounded-pill px-3" href="{% url 'staff:email_logs' %}">Clear</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="staff-stat-grid mb-4" aria-label="Email metrics">
+    <article class="staff-stat-card tone-blue">
+      <span class="staff-stat-label">Visible logs</span>
+      <strong class="staff-stat-value">{{ email_metrics.visible }}</strong>
+      <span class="staff-stat-helper">Results in the current filter set</span>
+    </article>
+    <article class="staff-stat-card tone-rose">
+      <span class="staff-stat-label">Failed</span>
+      <strong class="staff-stat-value">{{ email_metrics.failed }}</strong>
+      <span class="staff-stat-helper">Logs with delivery errors</span>
+    </article>
+    <article class="staff-stat-card tone-amber">
+      <span class="staff-stat-label">Skipped</span>
+      <strong class="staff-stat-value">{{ email_metrics.skipped }}</strong>
+      <span class="staff-stat-helper">Usually missing Brevo configuration</span>
+    </article>
+    <article class="staff-stat-card tone-teal">
+      <span class="staff-stat-label">Sent</span>
+      <strong class="staff-stat-value">{{ email_metrics.sent }}</strong>
+      <span class="staff-stat-helper">Successfully delivered notifications</span>
+    </article>
+  </section>
+
+  <section class="staff-panel">
+    <div class="staff-panel-head">
+      <div>
+        <p class="staff-panel-kicker mb-1">Notification log</p>
+        <h2 class="h4 mb-0">Delivery review</h2>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table align-middle staff-table mb-0">
+        <thead>
+          <tr>
+            <th scope="col">Recipient</th>
+            <th scope="col">Template</th>
+            <th scope="col">Status</th>
+            <th scope="col">Order</th>
+            <th scope="col">Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in email_logs %}
+            <tr>
+              <td>
+                <strong class="d-block">{{ log.recipient }}</strong>
+                <span class="text-secondary small">{{ log.created_at|date:'d M Y g:i A' }}</span>
+              </td>
+              <td>
+                <strong class="d-block">{{ log.template_key }}</strong>
+                <span class="text-secondary small">{{ log.subject|truncatechars:60 }}</span>
+              </td>
+              <td><span class="staff-status-pill status-{{ log.status }}">{{ log.get_status_display }}</span></td>
+              <td>
+                {% if log.order %}
+                  <a class="staff-table-link" href="{% url 'staff:order_detail' log.order.order_number %}">{{ log.order.order_number }}</a>
+                {% else %}
+                  <span class="text-secondary">No order</span>
+                {% endif %}
+              </td>
+              <td><span class="text-secondary small">{{ log.error_message|default:'No error recorded.'|truncatechars:80 }}</span></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="text-secondary py-4">No email logs matched the current filters.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

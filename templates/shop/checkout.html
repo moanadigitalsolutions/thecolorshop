@@ -61,6 +61,11 @@
           {{ form.pickup_phone.errors }}
         </div>
         <div class="col-12">
+          <label class="form-label" for="{{ form.pickup_location_choice.id_for_label }}">Pickup location</label>
+          {{ form.pickup_location_choice }}
+          {{ form.pickup_location_choice.errors }}
+        </div>
+        <div class="col-12">
           <label class="form-label" for="{{ form.special_instructions.id_for_label }}">Notes or special instructions</label>
           {{ form.special_instructions }}
           {{ form.special_instructions.errors }}
@@ -68,7 +73,7 @@
       </div>
 
       <div class="alert alert-info mt-4 mb-4" role="note">
-        <strong>Pickup location:</strong> 569J+3VH, Togafu'afu'a Rd, Apia, Samoa. Payment is cash at the store.
+        <strong>Pickup reminder:</strong> Choose the store location above. Payment is cash at the store.
       </div>
       <button class="btn btn-accent btn-lg w-100" type="submit"><i class="bi bi-check2-circle me-2" aria-hidden="true"></i>Place pickup order</button>
     </form>

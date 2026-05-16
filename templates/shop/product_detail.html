@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}{{ product.name }} | The Color Shop{% endblock %}
+{% block title %}{{ product.seo_page_title }} | The Color Shop{% endblock %}
+{% block meta_description %}{{ product.seo_summary }}{% endblock %}
 {% block content %}
 <nav aria-label="breadcrumb" class="mb-3">
   <ol class="breadcrumb small">
@@ -10,16 +11,56 @@
 
 <div class="row g-4 align-items-start">
   <div class="col-lg-6">
-    <div class="detail-image shadow-sm">
-      {% if product.image %}
+    {% if gallery_media %}
+      <div class="product-media-shell">
+        <div class="tab-content product-media-stage shadow-sm" id="productMediaStage">
+          {% for media in gallery_media %}
+            <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="media-pane-{{ forloop.counter }}" role="tabpanel" aria-labelledby="media-tab-{{ forloop.counter }}">
+              <div class="detail-image product-media-frame">
+                {% if media.is_image %}
+                  <img src="{{ media.file.url }}" alt="{{ media.display_name }}">
+                {% elif media.is_video %}
+                  <video class="w-100 h-100" controls preload="metadata">
+                    <source src="{{ media.file.url }}">
+                  </video>
+                {% elif media.is_audio %}
+                  <div class="product-audio-stage">
+                    <span class="product-media-pill">Audio preview</span>
+                    <i class="bi bi-music-note-beamed display-4" aria-hidden="true"></i>
+                    <strong>{{ media.display_name }}</strong>
+                    <audio class="w-100" controls preload="none" src="{{ media.file.url }}"></audio>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="product-media-thumb-grid nav mt-3" role="tablist" aria-label="Product media gallery">
+          {% for media in gallery_media %}
+            <button class="product-media-thumb {% if forloop.first %}active{% endif %}" id="media-tab-{{ forloop.counter }}" data-bs-toggle="tab" data-bs-target="#media-pane-{{ forloop.counter }}" type="button" role="tab" aria-controls="media-pane-{{ forloop.counter }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+              {% if media.is_image %}
+                <img src="{{ media.file.url }}" alt="{{ media.display_name }}">
+              {% elif media.is_video %}
+                <span class="product-media-thumb-icon"><i class="bi bi-camera-video-fill" aria-hidden="true"></i><small>Video</small></span>
+              {% elif media.is_audio %}
+                <span class="product-media-thumb-icon"><i class="bi bi-music-note-beamed" aria-hidden="true"></i><small>Audio</small></span>
+              {% endif %}
+            </button>
+          {% endfor %}
+        </div>
+      </div>
+    {% elif product.image %}
+      <div class="detail-image shadow-sm">
         <img src="{{ product.image.url }}" alt="{{ product.name }}">
-      {% else %}
+      </div>
+    {% else %}
+      <div class="detail-image shadow-sm">
         <div>
           <i class="bi bi-palette display-4 d-block mb-2" aria-hidden="true"></i>
           <span>{{ product.category.name }}</span>
         </div>
-      {% endif %}
-    </div>
+      </div>
+    {% endif %}
     <div class="row g-2 mt-2">
       <div class="col-4"><div class="hero-stat text-center"><small class="text-secondary">Pickup</small><strong class="d-block">Store</strong></div></div>
       <div class="col-4"><div class="hero-stat text-center"><small class="text-secondary">Payment</small><strong class="d-block">Cash</strong></div></div>
@@ -30,6 +71,13 @@
     <p class="kicker mb-2">{{ product.category.name }}</p>
     <h1 class="display-6 fw-bold mb-3">{{ product.name }}</h1>
     <p class="lead text-secondary">{{ product.description|default:'Select a stocked variant and add it to your pickup order.' }}</p>
+    {% if product.available_pickup_locations %}
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        {% for location in product.available_pickup_locations %}
+          <span class="badge text-bg-light border rounded-pill px-3 py-2"><i class="bi bi-geo-alt me-1" aria-hidden="true"></i>{{ location.name }}</span>
+        {% endfor %}
+      </div>
+    {% endif %}
 
     <form method="post" action="{% url 'cart_add' %}" class="purchase-panel mt-4">
       {% csrf_token %}
@@ -49,10 +97,13 @@
             <span class="flex-grow-1">
               <span class="d-flex flex-wrap justify-content-between gap-2">
                 <strong>{{ variant.display_name }}</strong>
-                <span class="fw-bold">WST {{ variant.price }}</span>
+                <span class="fw-bold">WST {{ variant.current_price }}</span>
               </span>
               <span class="d-flex flex-wrap gap-2 mt-2">
                 <span class="badge text-bg-light border">{{ variant.sku }}</span>
+                {% if variant.sale_price %}
+                  <span class="badge text-bg-light border text-decoration-line-through">WST {{ variant.price }}</span>
+                {% endif %}
                 {% if variant.stock_state == 'low stock' %}
                   <span class="stock-badge stock-low">Low stock</span>
                 {% elif variant.is_in_stock %}

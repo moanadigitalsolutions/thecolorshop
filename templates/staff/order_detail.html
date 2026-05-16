@@ -1,0 +1,86 @@
+{% extends 'staff/base_admin.html' %}
+{% block title %}{{ order.order_number }} | Staff Admin{% endblock %}
+{% block staff_page_title %}{{ order.order_number }}{% endblock %}
+{% block staff_topbar_state %}
+  <span class="staff-topbar-state">Order detail</span>
+{% endblock %}
+{% block staff_topbar_actions %}
+  <a class="btn btn-outline-light btn-sm rounded-pill px-3" href="{% url 'staff:orders' %}">Back to orders</a>
+  <button class="btn btn-light btn-sm rounded-pill px-3" type="submit" form="order-status-form">Save</button>
+{% endblock %}
+{% block content %}
+  <div class="row g-4">
+    <div class="col-xl-8">
+      <section class="staff-panel mb-4">
+        <div class="staff-panel-head">
+          <div>
+            <p class="staff-panel-kicker mb-1">Order snapshot</p>
+            <h2 class="h4 mb-0">Items and pickup details</h2>
+          </div>
+          <span class="staff-status-pill status-{{ order.status }}">{{ order.get_status_display }}</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table align-middle staff-table mb-0">
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col">SKU</th>
+                <th scope="col">Qty</th>
+                <th scope="col">Unit</th>
+                <th scope="col">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in order.items.all %}
+                <tr>
+                  <td><strong class="d-block">{{ item.product_name }}</strong><span class="text-secondary small">{{ item.variant_name }}</span></td>
+                  <td>{{ item.sku }}</td>
+                  <td>{{ item.quantity }}</td>
+                  <td>WST {{ item.unit_price }}</td>
+                  <td>WST {{ item.line_total }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-xl-4">
+      <section class="staff-editor-card mb-4">
+        <div class="staff-editor-card-head">
+          <h2 class="h6 mb-0">Update order</h2>
+        </div>
+        <form id="order-status-form" method="post" class="staff-form-stack mt-3">
+          {% csrf_token %}
+          {% for error in order_form.non_field_errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+          <div>
+            <label class="form-label staff-filter-label" for="{{ order_form.status.id_for_label }}">Status</label>
+            {{ order_form.status }}
+            {% for error in order_form.status.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+          </div>
+          <div>
+            <label class="form-label staff-filter-label" for="{{ order_form.special_instructions.id_for_label }}">Notes</label>
+            {{ order_form.special_instructions }}
+            {% for error in order_form.special_instructions.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+          </div>
+        </form>
+      </section>
+
+      <section class="staff-editor-card">
+        <div class="staff-editor-card-head">
+          <h2 class="h6 mb-0">Pickup details</h2>
+        </div>
+        <dl class="staff-summary-list mb-0 mt-3">
+          <div><dt>Customer</dt><dd>{{ order.customer_name }}</dd></div>
+          <div><dt>Email</dt><dd>{{ order.customer_email }}</dd></div>
+          <div><dt>Pickup person</dt><dd>{{ order.pickup_name }}</dd></div>
+          <div><dt>Location</dt><dd>{{ order.pickup_location }}</dd></div>
+          <div><dt>Address</dt><dd>{{ order.pickup_address }}</dd></div>
+          <div><dt>Total</dt><dd>WST {{ order.total }}</dd></div>
+        </dl>
+      </section>
+    </div>
+  </div>
+{% endblock %}

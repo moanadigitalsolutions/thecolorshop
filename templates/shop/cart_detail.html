@@ -32,8 +32,8 @@
           <article class="order-card p-3">
             <div class="d-flex flex-column flex-md-row gap-3 align-items-md-center">
               <div class="cart-thumb">
-                {% if item.variant.product.image %}
-                  <img src="{{ item.variant.product.image.url }}" alt="{{ item.variant.product.name }}">
+                {% if item.variant.product.primary_image_url %}
+                  <img src="{{ item.variant.product.primary_image_url }}" alt="{{ item.variant.product.name }}">
                 {% else %}
                   <i class="bi bi-palette" aria-hidden="true"></i>
                 {% endif %}

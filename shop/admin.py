@@ -1,6 +1,21 @@
 from django.contrib import admin, messages
 
-from .models import Category, CustomerProfile, EmailLog, Order, OrderItem, Product, ProductVariant
+from .models import (
+    Category,
+    CustomerProfile,
+    EmailLog,
+    Order,
+    OrderItem,
+    Product,
+    ProductMedia,
+    ProductOption,
+    ProductOptionValue,
+    ProductTag,
+    ProductVariant,
+    ProductVariantSelectedOption,
+    StoreLocation,
+    VariantInventoryLevel,
+)
 from .services import send_order_confirmation, send_order_status_update
 
 
@@ -12,26 +27,107 @@ class CategoryAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description')
 
 
+class ProductOptionValueInline(admin.TabularInline):
+    model = ProductOptionValue
+    extra = 0
+    fields = ('value', 'sort_order')
+
+
+class ProductOptionInline(admin.StackedInline):
+    model = ProductOption
+    extra = 0
+    fields = ('name', 'sort_order')
+
+
 class ProductVariantInline(admin.TabularInline):
     model = ProductVariant
     extra = 0
-    fields = ('sku', 'color', 'size', 'finish', 'price', 'stock_quantity', 'low_stock_threshold', 'is_active')
+    fields = ('sku', 'color', 'size', 'finish', 'price', 'sale_price', 'stock_quantity', 'low_stock_threshold', 'is_active')
+
+
+class ProductMediaInline(admin.TabularInline):
+    model = ProductMedia
+    extra = 0
+    fields = ('file', 'media_type', 'alt_text', 'sort_order', 'is_primary')
+    readonly_fields = ('media_type',)
+
+
+@admin.register(ProductTag)
+class ProductTagAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug')
+    search_fields = ('name', 'slug')
+    prepopulated_fields = {'slug': ('name',)}
 
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('name', 'category', 'is_active', 'is_featured', 'starting_price')
-    list_filter = ('category', 'is_active', 'is_featured')
+    list_filter = ('category', 'is_active', 'is_featured', 'tags')
     prepopulated_fields = {'slug': ('name',)}
-    search_fields = ('name', 'description', 'variants__sku', 'variants__color', 'variants__size', 'variants__finish')
-    inlines = [ProductVariantInline]
+    search_fields = (
+        'name',
+        'description',
+        'meta_title',
+        'meta_description',
+        'tags__name',
+        'variants__sku',
+        'variants__color',
+        'variants__size',
+        'variants__finish',
+        'options__name',
+        'options__option_values__value',
+        'variants__selected_options__option_value__value',
+    )
+    inlines = [ProductMediaInline, ProductOptionInline, ProductVariantInline]
+
+
+@admin.register(ProductMedia)
+class ProductMediaAdmin(admin.ModelAdmin):
+    list_display = ('product', 'media_type', 'sort_order', 'is_primary')
+    list_filter = ('media_type', 'is_primary')
+    search_fields = ('product__name', 'alt_text', 'file')
+
+
+@admin.register(ProductOption)
+class ProductOptionAdmin(admin.ModelAdmin):
+    list_display = ('name', 'product', 'sort_order')
+    list_filter = ('product__category',)
+    search_fields = ('name', 'product__name', 'option_values__value')
+    inlines = [ProductOptionValueInline]
+
+
+class ProductVariantSelectedOptionInline(admin.TabularInline):
+    model = ProductVariantSelectedOption
+    extra = 0
+    fields = ('option', 'option_value', 'sort_order')
+
+
+class VariantInventoryLevelInline(admin.TabularInline):
+    model = VariantInventoryLevel
+    extra = 0
+    fields = ('location', 'quantity')
 
 
 @admin.register(ProductVariant)
 class ProductVariantAdmin(admin.ModelAdmin):
-    list_display = ('sku', 'product', 'display_name', 'price', 'stock_quantity', 'stock_state', 'is_active')
-    list_filter = ('is_active', 'product__category', 'finish')
-    search_fields = ('sku', 'product__name', 'color', 'size', 'finish')
+    list_display = ('sku', 'product', 'display_name', 'price', 'sale_price', 'stock_quantity', 'stock_state', 'is_active')
+    list_filter = ('is_active', 'product__category')
+    search_fields = ('sku', 'product__name', 'color', 'size', 'finish', 'selected_options__option__name', 'selected_options__option_value__value')
+    inlines = [ProductVariantSelectedOptionInline, VariantInventoryLevelInline]
+
+
+@admin.register(StoreLocation)
+class StoreLocationAdmin(admin.ModelAdmin):
+    list_display = ('name', 'address', 'is_active', 'is_pickup_enabled', 'sort_order')
+    list_filter = ('is_active', 'is_pickup_enabled')
+    search_fields = ('name', 'address', 'pickup_instructions')
+
+
+@admin.register(VariantInventoryLevel)
+class VariantInventoryLevelAdmin(admin.ModelAdmin):
+    list_display = ('variant', 'location', 'quantity')
+    list_filter = ('location',)
+    search_fields = ('variant__sku', 'variant__product__name', 'location__name')
 
 
 @admin.register(CustomerProfile)

@@ -48,11 +48,12 @@ class Cart:
             variant = variants_by_id.get(variant_id)
             if not variant:
                 continue
+            unit_price = variant.current_price
             yield {
                 'variant': variant,
                 'quantity': quantity,
-                'unit_price': variant.price,
-                'line_total': variant.price * quantity,
+                'unit_price': unit_price,
+                'line_total': unit_price * quantity,
             }
 
     def __len__(self):

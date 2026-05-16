@@ -1,0 +1,296 @@
+{% extends 'staff/base_admin.html' %}
+{% block title %}{% if product_page_mode == 'edit' %}{{ product.name }} | Staff Admin{% else %}Add product | Staff Admin{% endif %}{% endblock %}
+{% block staff_page_title %}{% if product_page_mode == 'edit' %}{{ product.name }}{% else %}Add product{% endif %}{% endblock %}
+{% block staff_topbar_state %}
+  <span class="staff-topbar-state">{% if product_page_mode == 'edit' %}Editing product{% else %}New product{% endif %}</span>
+{% endblock %}
+{% block staff_topbar_actions %}
+  <a class="btn btn-outline-light btn-sm rounded-pill px-3" href="{% url 'staff:products' %}">Discard</a>
+  <button class="btn btn-light btn-sm rounded-pill px-3" type="submit" form="product-editor-form" name="save_action" value="continue">Save</button>
+{% endblock %}
+{% block content %}
+  <form id="product-editor-form" method="post" enctype="multipart/form-data" class="staff-editor-page">
+    {% csrf_token %}
+    {{ option_formset.management_form }}
+    {{ variant_formset.management_form }}
+    <div class="staff-editor-grid">
+      <div class="staff-editor-main">
+        <section class="staff-editor-card">
+          <div class="staff-editor-card-head">
+            <h2 class="h5 mb-0">Product details</h2>
+          </div>
+          {% for error in product_form.non_field_errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+          <div class="staff-form-stack">
+            <div>
+              <label class="form-label staff-filter-label" for="{{ product_form.name.id_for_label }}">Title</label>
+              {{ product_form.name }}
+              {% for error in product_form.name.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+            </div>
+            <div>
+              <label class="form-label staff-filter-label" for="{{ product_form.description.id_for_label }}">Description</label>
+              {{ product_form.description }}
+              {% for error in product_form.description.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+            </div>
+            <div>
+              <label class="form-label staff-filter-label" for="{{ product_form.tags_input.id_for_label }}">Tags</label>
+              {{ product_form.tags_input }}
+              <p class="staff-input-helper mb-0">Use comma-separated tags to organize products for staff and search.</p>
+              {% for error in product_form.tags_input.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+            </div>
+          </div>
+        </section>
+
+        <section class="staff-editor-card">
+          <div class="staff-editor-card-head">
+            <h2 class="h5 mb-0">Media</h2>
+          </div>
+          <div class="staff-upload-panel">
+            <div>
+              <label class="form-label staff-filter-label" for="{{ product_form.media_files.id_for_label }}">Gallery uploads</label>
+              {{ product_form.media_files }}
+              <p class="staff-input-helper mb-3">Bulk upload images, videos, or audio from local files. Selected files preview here before save.</p>
+              {% for error in product_form.media_files.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+
+              <label class="form-label staff-filter-label" for="{{ product_form.image.id_for_label }}">Fallback cover image</label>
+              {{ product_form.image }}
+              <p class="staff-input-helper mb-0">Used when the gallery is empty and for legacy storefront fallback.</p>
+              {% for error in product_form.image.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+            </div>
+          </div>
+          {% if product_media_items or product.image %}
+            <div class="staff-media-section mt-3">
+              <p class="staff-filter-label mb-2">Saved media</p>
+              <div class="staff-media-grid">
+                {% for media in product_media_items %}
+                  <article class="staff-media-card">
+                    <div class="staff-media-card-frame">
+                      {% if media.is_image %}
+                        <img src="{{ media.file.url }}" alt="{{ media.display_name }}">
+                      {% elif media.is_video %}
+                        <video controls preload="metadata">
+                          <source src="{{ media.file.url }}">
+                        </video>
+                      {% elif media.is_audio %}
+                        <div class="staff-media-audio">
+                          <i class="bi bi-music-note-beamed" aria-hidden="true"></i>
+                          <audio controls preload="none" src="{{ media.file.url }}"></audio>
+                        </div>
+                      {% endif %}
+                    </div>
+                    <div class="staff-media-card-title">{{ media.display_name }}</div>
+                    <div class="staff-media-card-meta">
+                      <strong>{{ media.media_type|title }}</strong>
+                      <span>{% if media.is_primary %}Primary{% else %}Gallery{% endif %}</span>
+                    </div>
+                    <div class="staff-media-card-controls">
+                      <div>
+                        <label class="form-label staff-filter-label mb-1" for="media_sort_{{ media.id }}">Sort order</label>
+                        <input class="form-control staff-input" id="media_sort_{{ media.id }}" type="number" min="0" name="media_sort_{{ media.id }}" value="{{ media.sort_order }}">
+                      </div>
+                      <label class="staff-checkbox-shell">
+                        <input class="form-check-input" type="radio" name="primary_media_id" value="{{ media.id }}" {% if media.is_primary %}checked{% endif %}>
+                        <span>Primary media</span>
+                      </label>
+                      <label class="staff-checkbox-shell staff-checkbox-danger">
+                        <input class="form-check-input" type="checkbox" name="delete_media" value="{{ media.id }}">
+                        <span>Delete media</span>
+                      </label>
+                    </div>
+                  </article>
+                {% endfor %}
+                {% if not product_media_items and product.image %}
+                  <article class="staff-media-card">
+                    <div class="staff-media-card-frame">
+                      <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                    </div>
+                    <div class="staff-media-card-meta">
+                      <strong>Image</strong>
+                      <span>Fallback cover</span>
+                    </div>
+                  </article>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+          <div class="staff-media-section mt-3" data-selected-media-section hidden>
+            <p class="staff-filter-label mb-2">Selected for upload</p>
+            <div class="staff-media-grid" data-media-preview-grid></div>
+          </div>
+        </section>
+
+        <section class="staff-editor-card">
+          <div class="staff-editor-card-head">
+            <div>
+              <h2 class="h5 mb-1">Variant options</h2>
+              <p class="staff-input-helper mb-0">Define option names and values the Shopify way. Add values as a comma-separated list.</p>
+            </div>
+          </div>
+          <div class="staff-form-stack">
+            {% for form in option_formset %}
+              <div class="staff-option-row">
+                {{ form.id }}
+                {{ form.sort_order }}
+                <div>
+                  <label class="form-label staff-filter-label" for="{{ form.name.id_for_label }}">Option name</label>
+                  {{ form.name }}
+                  {% for error in form.name.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+                </div>
+                <div>
+                  <label class="form-label staff-filter-label" for="{{ form.option_values.id_for_label }}">Option values</label>
+                  {{ form.option_values }}
+                  <p class="staff-input-helper mb-0">Example: Small, Medium, Large</p>
+                  {% for error in form.option_values.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+                </div>
+                <label class="staff-checkbox-shell staff-checkbox-danger">{{ form.DELETE }}<span>Delete</span></label>
+              </div>
+              {% for error in form.non_field_errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="staff-editor-card">
+          <div class="staff-editor-card-head">
+            <div>
+              <h2 class="h5 mb-1">Variants</h2>
+              <p class="staff-input-helper mb-0">Sellable SKUs now select values from the option definitions above while still carrying price and stock here.</p>
+            </div>
+          </div>
+          <div class="staff-form-stack">
+            {% for form in variant_formset %}
+              <div class="staff-variant-card">
+                {{ form.id }}
+                <div class="staff-variant-card-grid">
+                  <div>
+                    <label class="form-label staff-filter-label" for="{{ form.sku.id_for_label }}">SKU</label>
+                    {{ form.sku }}
+                    {% for error in form.sku.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+                  </div>
+                  {% for option_field in form.option_choice_fields %}
+                    <div>
+                      <label class="form-label staff-filter-label" for="{{ option_field.id_for_label }}">{{ option_field.label }}</label>
+                      {{ option_field }}
+                      {% for error in option_field.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+                    </div>
+                  {% endfor %}
+                  <div>
+                    <label class="form-label staff-filter-label" for="{{ form.price.id_for_label }}">Price</label>
+                    {{ form.price }}
+                    {% for error in form.price.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+                  </div>
+                  <div>
+                    <label class="form-label staff-filter-label" for="{{ form.sale_price.id_for_label }}">Sale price</label>
+                    {{ form.sale_price }}
+                    {% for error in form.sale_price.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+                  </div>
+                  <div>
+                    <label class="form-label staff-filter-label" for="{{ form.stock_quantity.id_for_label }}">Qty</label>
+                    {{ form.stock_quantity }}
+                  </div>
+                  <div>
+                    <label class="form-label staff-filter-label" for="{{ form.low_stock_threshold.id_for_label }}">Low stock</label>
+                    {{ form.low_stock_threshold }}
+                  </div>
+                  <div>
+                    <label class="form-label staff-filter-label" for="{{ form.inventory_breakdown.id_for_label }}">Inventory by location</label>
+                    {{ form.inventory_breakdown }}
+                    <p class="staff-input-helper mb-0">Format: Apia Store: 4; Warehouse: 2. When used, total qty syncs from these entries.</p>
+                    {% for error in form.inventory_breakdown.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+                  </div>
+                </div>
+                <div class="staff-variant-card-actions">
+                  <label class="staff-checkbox-shell">{{ form.is_active }}<span>Active</span></label>
+                  <label class="staff-checkbox-shell staff-checkbox-danger">{{ form.DELETE }}<span>Remove</span></label>
+                </div>
+              </div>
+              {% for error in form.non_field_errors %}<div class="staff-field-error mt-2">{{ error }}</div>{% endfor %}
+            {% endfor %}
+            {% for error in variant_formset.non_form_errors %}<div class="staff-field-error mt-2">{{ error }}</div>{% endfor %}
+          </div>
+        </section>
+      </div>
+
+      <div class="staff-editor-side">
+        <section class="staff-editor-card">
+          <div class="staff-editor-card-head">
+            <h2 class="h6 mb-0">Status</h2>
+          </div>
+          <div class="staff-side-stack">
+            <label class="staff-toggle-row">{{ product_form.is_active }}<span>Available on storefront</span></label>
+            <label class="staff-toggle-row">{{ product_form.is_featured }}<span>Featured in catalogue</span></label>
+          </div>
+        </section>
+
+        <section class="staff-editor-card">
+          <div class="staff-editor-card-head">
+            <h2 class="h6 mb-0">Product organization</h2>
+          </div>
+          <div class="staff-form-stack">
+            <div>
+              <label class="form-label staff-filter-label" for="{{ product_form.category.id_for_label }}">Category</label>
+              {{ product_form.category }}
+              {% for error in product_form.category.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+            </div>
+            <div>
+              <label class="form-label staff-filter-label" for="{{ product_form.pickup_locations.id_for_label }}">Pickup locations</label>
+              {{ product_form.pickup_locations }}
+              <p class="staff-input-helper mb-0">Choose the store locations where this product can be collected.</p>
+              {% for error in product_form.pickup_locations.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+            </div>
+          </div>
+        </section>
+
+        <section class="staff-editor-card">
+          <div class="staff-editor-card-head">
+            <h2 class="h6 mb-0">Search engine listing</h2>
+          </div>
+          <div class="staff-form-stack">
+            <div>
+              <label class="form-label staff-filter-label" for="{{ product_form.meta_title.id_for_label }}">Page title</label>
+              {{ product_form.meta_title }}
+              {% for error in product_form.meta_title.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+            </div>
+            <div>
+              <label class="form-label staff-filter-label" for="{{ product_form.meta_description.id_for_label }}">Meta description</label>
+              {{ product_form.meta_description }}
+              {% for error in product_form.meta_description.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+            </div>
+            <div>
+              <label class="form-label staff-filter-label" for="{{ product_form.slug.id_for_label }}">Handle</label>
+              {{ product_form.slug }}
+              <p class="staff-input-helper mb-0">Used in the product URL. Leave blank to generate from the title.</p>
+              {% for error in product_form.slug.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+            </div>
+          </div>
+        </section>
+
+        <section class="staff-editor-card">
+          <div class="staff-editor-card-head">
+            <h2 class="h6 mb-0">Summary</h2>
+          </div>
+          <dl class="staff-summary-list mb-0">
+            <div>
+              <dt>Options</dt>
+              <dd>{{ product_editor_stats.option_count }}</dd>
+            </div>
+            <div>
+              <dt>Variants</dt>
+              <dd>{{ product_editor_stats.variant_count }}</dd>
+            </div>
+            <div>
+              <dt>Active variants</dt>
+              <dd>{{ product_editor_stats.active_variant_count }}</dd>
+            </div>
+            <div>
+              <dt>Starting price</dt>
+              <dd>{% if product_editor_stats.starting_price %}WST {{ product_editor_stats.starting_price }}{% else %}Not set{% endif %}</dd>
+            </div>
+          </dl>
+        </section>
+      </div>
+    </div>
+  </form>
+{% endblock %}
+{% block extra_scripts %}
+  {% load static %}
+  <script src="{% static 'js/staff-product-media.js' %}?v=20260516-media-preview"></script>
+{% endblock %}

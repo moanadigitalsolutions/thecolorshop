@@ -1,0 +1,81 @@
+{% load static %}
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Staff Login | The Color Shop</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/admin.css' %}?v=20260516-staff-login">
+</head>
+<body class="staff-login-body">
+  <main class="staff-login-shell">
+    <section class="staff-login-hero">
+      <p class="staff-login-kicker mb-3">The Color Shop</p>
+      <h1 class="staff-login-title mb-3">Staff operations portal</h1>
+      <p class="staff-login-copy mb-4">Manage products, pickup locations, orders, customer records, and notification issues from one operational workspace.</p>
+      <div class="staff-login-feature-list">
+        <div class="staff-login-feature">
+          <i class="bi bi-box-seam" aria-hidden="true"></i>
+          <div>
+            <strong>Catalog control</strong>
+            <span>Maintain products, variants, and live availability.</span>
+          </div>
+        </div>
+        <div class="staff-login-feature">
+          <i class="bi bi-receipt-cutoff" aria-hidden="true"></i>
+          <div>
+            <strong>Pickup workflow</strong>
+            <span>Track pending, ready, and completed orders without Django admin.</span>
+          </div>
+        </div>
+        <div class="staff-login-feature">
+          <i class="bi bi-envelope-paper" aria-hidden="true"></i>
+          <div>
+            <strong>Exception handling</strong>
+            <span>Review skipped or failed email logs before customers feel the delay.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="staff-login-panel" aria-label="Staff login form">
+      <div class="staff-login-panel-head">
+        <span class="staff-login-badge"><i class="bi bi-shield-lock-fill" aria-hidden="true"></i> Staff only</span>
+        <h2 class="h3 mb-2">Sign in</h2>
+        <p class="text-secondary mb-0">Use your staff account to access the operations dashboard.</p>
+      </div>
+
+      <form method="post" class="staff-login-form">
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger border-0 shadow-sm" role="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <div>
+          <label class="form-label staff-filter-label" for="{{ form.username.id_for_label }}">Username</label>
+          {{ form.username }}
+          {% for error in form.username.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+        </div>
+        <div>
+          <label class="form-label staff-filter-label" for="{{ form.password.id_for_label }}">Password</label>
+          {{ form.password }}
+          {% for error in form.password.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+        </div>
+        <button class="btn btn-dark btn-lg w-100 rounded-pill" type="submit">Open staff portal</button>
+      </form>
+
+      <div class="staff-login-footer">
+        <a class="staff-login-link" href="{% url 'login' %}">Customer login</a>
+        <a class="staff-login-link" href="{% url 'product_list' %}">Return to storefront</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
