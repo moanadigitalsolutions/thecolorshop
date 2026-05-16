@@ -29,7 +29,7 @@
           <i class="bi bi-house-door-fill" aria-hidden="true"></i>
           <span>Dashboard</span>
         </a>
-        <a class="staff-nav-link {% if request.resolver_match.url_name == 'products' or request.resolver_match.url_name == 'product_create' or request.resolver_match.url_name == 'product_edit' %}is-active{% endif %}" href="{% url 'staff:products' %}">
+        <a class="staff-nav-link {% if request.resolver_match.url_name == 'products' or request.resolver_match.url_name == 'product_create' or request.resolver_match.url_name == 'product_edit' or request.resolver_match.url_name == 'product_import_export' %}is-active{% endif %}" href="{% url 'staff:products' %}">
           <i class="bi bi-box-seam" aria-hidden="true"></i>
           <span>Products</span>
         </a>
@@ -48,6 +48,10 @@
         <a class="staff-nav-link {% if request.resolver_match.url_name == 'customers' %}is-active{% endif %}" href="{% url 'staff:customers' %}">
           <i class="bi bi-people-fill" aria-hidden="true"></i>
           <span>Customers</span>
+        </a>
+        <a class="staff-nav-link {% if request.resolver_match.url_name == 'email_settings' %}is-active{% endif %}" href="{% url 'staff:email_settings' %}">
+          <i class="bi bi-gear-fill" aria-hidden="true"></i>
+          <span>Email settings</span>
         </a>
         <a class="staff-nav-link {% if request.resolver_match.url_name == 'email_logs' %}is-active{% endif %}" href="{% url 'staff:email_logs' %}">
           <i class="bi bi-envelope-paper-fill" aria-hidden="true"></i>

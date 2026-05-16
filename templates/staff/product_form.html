@@ -48,12 +48,12 @@
             <div>
               <label class="form-label staff-filter-label" for="{{ product_form.media_files.id_for_label }}">Gallery uploads</label>
               {{ product_form.media_files }}
-              <p class="staff-input-helper mb-3">Bulk upload images, videos, or audio from local files. Selected files preview here before save.</p>
+              <p class="staff-input-helper mb-3">Bulk upload images, videos, or audio from local files. Selected files preview here before save. Image uploads are converted to WebP when you save; video and audio keep their original format.</p>
               {% for error in product_form.media_files.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
 
               <label class="form-label staff-filter-label" for="{{ product_form.image.id_for_label }}">Fallback cover image</label>
               {{ product_form.image }}
-              <p class="staff-input-helper mb-0">Used when the gallery is empty and for legacy storefront fallback.</p>
+              <p class="staff-input-helper mb-0">Used when the gallery is empty and for legacy storefront fallback. Uploaded cover images are also converted to WebP on save.</p>
               {% for error in product_form.image.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
             </div>
           </div>

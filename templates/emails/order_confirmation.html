@@ -1,0 +1,29 @@
+{% extends 'emails/base.html' %}
+{% block email_body %}
+  <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;">Talofa {{ customer_name }},</p>
+  <p style="margin:0 0 18px 0;font-size:16px;line-height:1.7;">Your pickup order <strong>{{ order.order_number }}</strong> has been received and is now being prepared by our team.</p>
+  <div style="margin:0 0 24px 0;padding:18px 20px;border-radius:20px;background-color:#eef3f6;">
+    <p style="margin:0 0 6px 0;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#667085;">Pickup details</p>
+    <p style="margin:0;font-size:16px;line-height:1.7;color:#17254d;">Collect from {{ order.pickup_address }} and pay cash at the store.</p>
+  </div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:24px 0;border-collapse:collapse;">
+    <tr>
+      <td style="padding:12px 0;border-bottom:1px solid #d8dee7;font-weight:800;color:#17254d;">Items</td>
+      <td style="padding:12px 0;border-bottom:1px solid #d8dee7;font-weight:800;color:#17254d;" align="right">Line total</td>
+    </tr>
+    {% for item in order_items %}
+      <tr>
+        <td style="padding:12px 0;border-bottom:1px solid #eef3f6;vertical-align:top;">
+          <div style="font-weight:700;color:#17254d;">{{ item.quantity }} x {{ item.product_name }}</div>
+          {% if item.variant_name %}<div style="font-size:14px;color:#667085;">{{ item.variant_name }}</div>{% endif %}
+        </td>
+        <td style="padding:12px 0;border-bottom:1px solid #eef3f6;vertical-align:top;font-weight:700;color:#17254d;" align="right">WST {{ item.line_total }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+  <div style="margin:24px 0 0 0;padding:20px 22px;border-radius:20px;background-color:#f7f8fb;border:1px solid #e4ecfb;">
+    <p style="margin:0 0 8px 0;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#667085;">Order total</p>
+    <p style="margin:0;font-size:22px;line-height:1.3;font-weight:800;color:#183972;">WST {{ order.total }}</p>
+  </div>
+  <p style="margin:18px 0 0 0;font-size:14px;line-height:1.7;color:#667085;">Use the button below to review your order details after logging into your customer account.</p>
+{% endblock %}

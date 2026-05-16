@@ -13,4 +13,8 @@ urlpatterns = [
     path('orders/', views.order_history, name='order_history'),
     path('orders/<str:order_number>/', views.order_detail, name='order_detail'),
     path('signup/', views.signup, name='signup'),
+    path('verify-email/pending/', views.verification_pending, name='verification_pending'),
+    path('verify-email/resend/', views.resend_verification, name='resend_verification'),
+    path('verify-email/success/', views.verification_success, name='verification_success'),
+    path('verify-email/<uidb64>/<token>/', views.verify_email, name='verify_email'),
 ]

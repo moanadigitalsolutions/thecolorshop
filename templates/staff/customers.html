@@ -83,5 +83,7 @@
         </tbody>
       </table>
     </div>
+
+    {% include 'includes/pagination.html' with page_obj=page_obj page_query=page_query pagination_label='Staff customers' pagination_nav_class='mt-4 pt-3 border-top' %}
   </section>
 {% endblock %}

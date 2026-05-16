@@ -8,7 +8,10 @@
         <p class="staff-panel-kicker mb-1">Catalogue workspace</p>
         <h2 class="h4 mb-0">Browse products, filter quickly, and jump into edit flows.</h2>
       </div>
-      <a class="btn btn-dark rounded-pill px-3" href="{% url 'staff:product_create' %}">Add product</a>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-dark rounded-pill px-3" href="{% url 'staff:product_import_export' %}">Bulk tools</a>
+        <a class="btn btn-dark rounded-pill px-3" href="{% url 'staff:product_create' %}">Add product</a>
+      </div>
     </div>
 
     <form class="staff-filter-grid" action="{% url 'staff:products' %}" method="get">
@@ -137,6 +140,8 @@
             </tbody>
           </table>
         </div>
+
+        {% include 'includes/pagination.html' with page_obj=page_obj page_query=page_query pagination_label='Staff products' pagination_nav_class='mt-4 pt-3 border-top' %}
       </section>
     </div>
 

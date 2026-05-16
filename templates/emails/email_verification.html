@@ -1,0 +1,12 @@
+{% extends 'emails/base.html' %}
+{% block email_body %}
+  <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;">Talofa {{ customer_name }},</p>
+  <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;">Welcome to The Color Shop. Please verify your email address to finish setting up your account and unlock customer login.</p>
+  <div style="margin:0 0 18px 0;padding:18px 20px;background-color:#eef3f6;border-radius:20px;">
+    <p style="margin:0 0 8px 0;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#667085;">Why this matters</p>
+    <p style="margin:0;font-size:16px;line-height:1.7;color:#17254d;">Email verification protects your account and confirms that future order updates will reach the right inbox.</p>
+  </div>
+  <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;">Use the button below to confirm this email address. If the button does not work, copy and paste this link into your browser:</p>
+  <p style="margin:0 0 16px 0;font-size:14px;line-height:1.8;word-break:break-word;"><a href="{{ verification_url }}" style="color:#24498f;">{{ verification_url }}</a></p>
+  <p style="margin:0;font-size:16px;line-height:1.7;">If you did not create an account, you can safely ignore this email.</p>
+{% endblock %}

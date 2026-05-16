@@ -1,15 +1,27 @@
 from functools import wraps
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.views import LoginView, redirect_to_login
+from django.http import HttpResponse
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, F, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
+from tablib import Dataset
 
-from .forms import OrderStaffStatusForm, ProductOptionStaffFormSet, ProductStaffForm, ProductVariantStaffFormSet, StaffAuthenticationForm, StoreLocationStaffForm, build_product_option_definitions
-from .models import Category, CustomerProfile, EmailLog, Order, Product, ProductVariant, StoreLocation
+from .forms import EmailSettingsStaffForm, OrderStaffStatusForm, ProductOptionStaffFormSet, ProductStaffForm, ProductVariantStaffFormSet, StaffAuthenticationForm, StaffCatalogExportForm, StaffCatalogImportForm, StoreLocationStaffForm, build_product_option_definitions
+from .import_export_resources import IMPORT_EXPORT_DEFINITIONS, get_import_export_definition
+from .models import Category, CustomerProfile, EmailLog, EmailSettings, Order, Product, ProductVariant, StoreLocation
 from .services import send_order_status_update
+
+
+STAFF_PRODUCTS_PAGE_SIZE = 20
+STAFF_ORDERS_PAGE_SIZE = 50
+STAFF_CUSTOMERS_PAGE_SIZE = 50
+STAFF_EMAIL_LOGS_PAGE_SIZE = 75
 
 
 class StaffLoginView(LoginView):
@@ -42,6 +54,12 @@ def staff_required(view_func):
         return view_func(request, *args, **kwargs)
 
     return wrapped_view
+
+
+def build_page_query(request):
+    params = request.GET.copy()
+    params.pop('page', None)
+    return params.urlencode()
 
 
 @staff_required
@@ -174,10 +192,16 @@ def product_catalog(request):
             }
         )
 
+    paginator = Paginator(product_rows, STAFF_PRODUCTS_PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     context = {
         'categories': categories,
         'filters': {'q': query, 'category': category_slug, 'status': status_filter},
-        'product_rows': product_rows,
+        'is_paginated': page_obj.has_other_pages(),
+        'page_obj': page_obj,
+        'page_query': build_page_query(request),
+        'product_rows': page_obj.object_list,
         'product_metrics': {
             'visible': len(product_rows),
             'featured': sum(1 for row in product_rows if row['product'].is_featured),
@@ -187,6 +211,86 @@ def product_catalog(request):
         'at_risk_products': [row for row in product_rows if row['stock_state'] == 'at-risk'][:5],
     }
     return render(request, 'staff/products.html', context)
+
+
+def _serialize_import_errors(result):
+    error_rows = []
+
+    for row in result.invalid_rows:
+        messages_for_row = []
+        for field_name, field_errors in row.error.error_dict.items():
+            messages_for_row.append(f'{field_name}: {"; ".join(str(error) for error in field_errors)}')
+        error_rows.append({'number': row.number, 'messages': messages_for_row, 'values': row.values})
+
+    for row in result.error_rows:
+        if hasattr(row.error, 'error_dict'):
+            messages_for_row = []
+            for field_name, field_errors in row.error.error_dict.items():
+                messages_for_row.append(f'{field_name}: {"; ".join(str(error) for error in field_errors)}')
+        else:
+            messages_for_row = [str(row.error)]
+        error_rows.append({'number': row.number, 'messages': messages_for_row, 'values': getattr(row, 'values', {})})
+
+    return error_rows
+
+
+@staff_required
+def product_import_export(request):
+    export_form = StaffCatalogExportForm(request.GET or None)
+    import_form = StaffCatalogImportForm(request.POST or None, request.FILES or None)
+    import_errors = []
+
+    if request.method == 'GET' and request.GET.get('export') and export_form.is_valid():
+        resource_definition = get_import_export_definition(export_form.cleaned_data['resource'])
+        resource = resource_definition['resource_class']()
+        dataset = resource.export()
+        response = HttpResponse(dataset.csv, content_type='text/csv; charset=utf-8')
+        timestamp = timezone.now().strftime('%Y%m%d-%H%M%S')
+        response['Content-Disposition'] = f'attachment; filename="tcs-{resource_definition["filename"]}-{timestamp}.csv"'
+        return response
+
+    if request.method == 'POST' and import_form.is_valid():
+        resource_definition = get_import_export_definition(import_form.cleaned_data['resource'])
+        resource = resource_definition['resource_class']()
+        uploaded_text = import_form.cleaned_data['import_file'].read().decode('utf-8-sig')
+        dataset = Dataset().load(uploaded_text, format='csv')
+        preview = resource.import_data(
+            dataset,
+            dry_run=True,
+            raise_errors=False,
+            use_transactions=True,
+            rollback_on_validation_errors=True,
+            collect_failed_rows=True,
+        )
+        if preview.has_errors() or preview.has_validation_errors():
+            import_errors = _serialize_import_errors(preview)
+            messages.error(request, 'Import validation failed. Fix the rows below and try again.')
+        else:
+            result = resource.import_data(
+                dataset,
+                dry_run=False,
+                raise_errors=False,
+                use_transactions=True,
+                rollback_on_validation_errors=True,
+            )
+            messages.success(
+                request,
+                (
+                    f'{resource_definition["label"]} import completed. '
+                    f'Added {result.totals.get("new", 0)}, '
+                    f'updated {result.totals.get("update", 0)}, '
+                    f'skipped {result.totals.get("skip", 0)}.'
+                ),
+            )
+            return redirect('staff:product_import_export')
+
+    context = {
+        'export_form': export_form,
+        'import_form': import_form,
+        'import_errors': import_errors,
+        'resource_definitions': IMPORT_EXPORT_DEFINITIONS,
+    }
+    return render(request, 'staff/product_import_export.html', context)
 
 
 @staff_required
@@ -239,6 +343,35 @@ def location_edit(request, pk):
 
 
 @staff_required
+def email_settings(request):
+    settings_record = EmailSettings.get_solo()
+    form = EmailSettingsStaffForm(request.POST or None, instance=settings_record)
+
+    if request.method == 'POST' and form.is_valid():
+        saved_settings = form.save()
+        messages.success(request, f'Email delivery updated. {saved_settings.get_email_provider_display()} is now active.')
+        return redirect('staff:email_settings')
+
+    smtp_ready = all(getattr(settings, setting_name, '') for setting_name in ('EMAIL_HOST', 'EMAIL_HOST_USER', 'EMAIL_HOST_PASSWORD'))
+    context = {
+        'email_settings_form': form,
+        'settings_record': settings_record,
+        'provider_metrics': {
+            'active_provider': settings_record.get_email_provider_display(),
+            'smtp_ready': smtp_ready,
+            'brevo_ready': bool(settings.BREVO_API_KEY),
+        },
+        'provider_details': {
+            'smtp_host': settings.EMAIL_HOST,
+            'smtp_port': settings.EMAIL_PORT,
+            'smtp_username': settings.EMAIL_HOST_USER,
+            'brevo_sender': settings.BREVO_SENDER_EMAIL,
+        },
+    }
+    return render(request, 'staff/email_settings.html', context)
+
+
+@staff_required
 def order_catalog(request):
     query = request.GET.get('q', '').strip()
     status_filter = request.GET.get('status', '').strip()
@@ -255,9 +388,15 @@ def order_catalog(request):
     if status_filter:
         orders = orders.filter(status=status_filter)
 
+    paginator = Paginator(orders, STAFF_ORDERS_PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     context = {
-        'orders': orders[:50],
+        'is_paginated': page_obj.has_other_pages(),
+        'orders': page_obj.object_list,
         'filters': {'q': query, 'status': status_filter},
+        'page_obj': page_obj,
+        'page_query': build_page_query(request),
         'order_metrics': {
             'visible': orders.count(),
             'pending': orders.filter(status=Order.STATUS_PENDING_PAYMENT).count(),
@@ -302,14 +441,20 @@ def customer_catalog(request):
             | Q(default_pickup_name__icontains=query)
         )
 
+    paginator = Paginator(customers, STAFF_CUSTOMERS_PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     context = {
-        'customers': customers[:50],
+        'customers': page_obj.object_list,
         'filters': {'q': query},
+        'is_paginated': page_obj.has_other_pages(),
         'customer_metrics': {
             'visible': customers.count(),
             'with_phone': customers.exclude(phone_number='').count(),
             'with_pickup_name': customers.exclude(default_pickup_name='').count(),
         },
+        'page_obj': page_obj,
+        'page_query': build_page_query(request),
     }
     return render(request, 'staff/customers.html', context)
 
@@ -333,10 +478,16 @@ def email_log_catalog(request):
     if template_filter:
         email_logs = email_logs.filter(template_key=template_filter)
 
+    paginator = Paginator(email_logs, STAFF_EMAIL_LOGS_PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     template_choices = list(EmailLog.objects.order_by().values_list('template_key', flat=True).distinct())
     context = {
-        'email_logs': email_logs[:75],
+        'email_logs': page_obj.object_list,
         'filters': {'q': query, 'status': status_filter, 'template': template_filter},
+        'is_paginated': page_obj.has_other_pages(),
+        'page_obj': page_obj,
+        'page_query': build_page_query(request),
         'status_choices': EmailLog.STATUS_CHOICES,
         'template_choices': template_choices,
         'email_metrics': {

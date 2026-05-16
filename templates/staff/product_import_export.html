@@ -1,0 +1,91 @@
+{% extends 'staff/base_admin.html' %}
+{% block title %}Bulk Product Tools | Staff Admin{% endblock %}
+{% block staff_page_title %}Bulk Product Tools{% endblock %}
+{% block staff_topbar_state %}
+  <span class="staff-topbar-state">CSV import and export</span>
+{% endblock %}
+{% block content %}
+  <section class="staff-panel mb-4">
+    <div class="staff-panel-head">
+      <div>
+        <p class="staff-panel-kicker mb-1">Catalogue operations</p>
+        <h2 class="h4 mb-0">Move products, variants, and per-location inventory in bulk.</h2>
+      </div>
+      <a class="btn btn-outline-dark rounded-pill px-3" href="{% url 'staff:products' %}">Back to products</a>
+    </div>
+    <p class="text-secondary mb-0">Export a current CSV first, update it offline, then import it back here. Variant imports preserve the option-driven model by reading the <strong>option_values</strong> column in the format <strong>Size=Medium|Finish=Matte</strong>.</p>
+  </section>
+
+  <div class="row g-4">
+    <div class="col-xl-5">
+      <section class="staff-panel h-100">
+        <div class="staff-panel-head">
+          <div>
+            <p class="staff-panel-kicker mb-1">Export</p>
+            <h2 class="h4 mb-0">Download a working CSV</h2>
+          </div>
+        </div>
+        <form method="get" class="staff-form-stack">
+          <input type="hidden" name="export" value="1">
+          <div>
+            <label class="form-label staff-filter-label" for="{{ export_form.resource.id_for_label }}">Dataset</label>
+            {{ export_form.resource }}
+          </div>
+          <button class="btn btn-dark rounded-pill px-3 align-self-start" type="submit">Download CSV</button>
+        </form>
+
+        <div class="staff-form-stack mt-4">
+          {% for resource_key, resource_definition in resource_definitions.items %}
+            <article class="border rounded-4 p-3 bg-white">
+              <strong class="d-block mb-1">{{ resource_definition.label }}</strong>
+              <p class="text-secondary small mb-0">{{ resource_definition.description }}</p>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+
+    <div class="col-xl-7">
+      <section class="staff-panel h-100">
+        <div class="staff-panel-head">
+          <div>
+            <p class="staff-panel-kicker mb-1">Import</p>
+            <h2 class="h4 mb-0">Upload CSV changes</h2>
+          </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="staff-form-stack">
+          {% csrf_token %}
+          <div>
+            <label class="form-label staff-filter-label" for="{{ import_form.resource.id_for_label }}">Dataset</label>
+            {{ import_form.resource }}
+            {% for error in import_form.resource.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+          </div>
+          <div>
+            <label class="form-label staff-filter-label" for="{{ import_form.import_file.id_for_label }}">CSV file</label>
+            {{ import_form.import_file }}
+            <p class="staff-input-helper mb-0">Use UTF-8 CSV files. Export from this page or Django admin first so the column names stay aligned.</p>
+            {% for error in import_form.import_file.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+          </div>
+          <button class="btn btn-dark rounded-pill px-3 align-self-start" type="submit">Validate and import</button>
+        </form>
+
+        {% if import_errors %}
+          <div class="mt-4">
+            <h3 class="h6 mb-3">Import issues</h3>
+            <div class="staff-form-stack">
+              {% for row in import_errors %}
+                <article class="border border-danger-subtle rounded-4 p-3 bg-danger-subtle">
+                  <strong class="d-block mb-2">Row {{ row.number }}</strong>
+                  {% for message in row.messages %}
+                    <div class="small mb-1">{{ message }}</div>
+                  {% endfor %}
+                </article>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+{% endblock %}

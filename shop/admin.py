@@ -1,9 +1,12 @@
 from django.contrib import admin, messages
+from import_export.admin import ImportExportModelAdmin
 
+from .import_export_resources import ProductResource, ProductVariantResource, VariantInventoryLevelResource
 from .models import (
     Category,
     CustomerProfile,
     EmailLog,
+    EmailSettings,
     Order,
     OrderItem,
     Product,
@@ -60,7 +63,8 @@ class ProductTagAdmin(admin.ModelAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
+class ProductAdmin(ImportExportModelAdmin):
+    resource_classes = [ProductResource]
     list_display = ('name', 'category', 'is_active', 'is_featured', 'starting_price')
     list_filter = ('category', 'is_active', 'is_featured', 'tags')
     prepopulated_fields = {'slug': ('name',)}
@@ -109,7 +113,8 @@ class VariantInventoryLevelInline(admin.TabularInline):
 
 
 @admin.register(ProductVariant)
-class ProductVariantAdmin(admin.ModelAdmin):
+class ProductVariantAdmin(ImportExportModelAdmin):
+    resource_classes = [ProductVariantResource]
     list_display = ('sku', 'product', 'display_name', 'price', 'sale_price', 'stock_quantity', 'stock_state', 'is_active')
     list_filter = ('is_active', 'product__category')
     search_fields = ('sku', 'product__name', 'color', 'size', 'finish', 'selected_options__option__name', 'selected_options__option_value__value')
@@ -123,8 +128,21 @@ class StoreLocationAdmin(admin.ModelAdmin):
     search_fields = ('name', 'address', 'pickup_instructions')
 
 
+@admin.register(EmailSettings)
+class EmailSettingsAdmin(admin.ModelAdmin):
+    list_display = ('email_provider', 'updated_at')
+    readonly_fields = ('created_at', 'updated_at')
+
+    def has_add_permission(self, request):
+        return not EmailSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(VariantInventoryLevel)
-class VariantInventoryLevelAdmin(admin.ModelAdmin):
+class VariantInventoryLevelAdmin(ImportExportModelAdmin):
+    resource_classes = [VariantInventoryLevelResource]
     list_display = ('variant', 'location', 'quantity')
     list_filter = ('location',)
     search_fields = ('variant__sku', 'variant__product__name', 'location__name')

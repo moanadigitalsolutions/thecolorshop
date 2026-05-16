@@ -1,11 +1,15 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.forms import BaseInlineFormSet, inlineformset_factory
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
+from .services import send_password_reset_email
+
 from .models import (
+    EmailSettings,
     Order,
     Product,
     ProductMedia,
@@ -117,6 +121,12 @@ class SignUpForm(UserCreationForm):
         for field in self.fields.values():
             field.widget.attrs.update({'class': 'form-control'})
 
+    def clean_email(self):
+        email = self.cleaned_data['email'].strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError('An account with this email address already exists.')
+        return email
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
@@ -126,8 +136,86 @@ class SignUpForm(UserCreationForm):
             user.save()
             user.customer_profile.phone_number = self.cleaned_data.get('phone_number', '')
             user.customer_profile.default_pickup_name = user.get_full_name()
-            user.customer_profile.save(update_fields=['phone_number', 'default_pickup_name', 'updated_at'])
+            user.customer_profile.is_email_verified = False
+            user.customer_profile.email_verified_at = None
+            user.customer_profile.email_verification_sent_at = None
+            user.customer_profile.save(
+                update_fields=[
+                    'phone_number',
+                    'default_pickup_name',
+                    'is_email_verified',
+                    'email_verified_at',
+                    'email_verification_sent_at',
+                    'updated_at',
+                ]
+            )
         return user
+
+
+class CustomerAuthenticationForm(AuthenticationForm):
+    error_messages = {
+        **AuthenticationForm.error_messages,
+        'unverified': 'Please verify your email address before logging in.',
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].widget.attrs.update(
+            {
+                'class': 'form-control',
+                'autocomplete': 'username',
+                'placeholder': 'Username',
+            }
+        )
+        self.fields['password'].widget.attrs.update(
+            {
+                'class': 'form-control',
+                'autocomplete': 'current-password',
+                'placeholder': 'Password',
+            }
+        )
+
+    def confirm_login_allowed(self, user):
+        super().confirm_login_allowed(user)
+        if user.is_staff:
+            return
+        profile = getattr(user, 'customer_profile', None)
+        if not profile or not profile.is_email_verified:
+            raise forms.ValidationError(self.error_messages['unverified'], code='unverified')
+
+
+class ResendVerificationForm(forms.Form):
+    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control', 'autocomplete': 'email'}))
+
+
+class PasswordResetRequestForm(PasswordResetForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].widget.attrs.update({'class': 'form-control', 'autocomplete': 'email'})
+
+    def send_mail(
+        self,
+        subject_template_name,
+        email_template_name,
+        context,
+        from_email,
+        to_email,
+        html_email_template_name=None,
+    ):
+        user = context['user']
+        reset_path = reverse(
+            'password_reset_confirm',
+            kwargs={'uidb64': context['uid'], 'token': context['token']},
+        )
+        reset_url = f"{context['protocol']}://{context['domain']}{reset_path}"
+        send_password_reset_email(user, reset_url)
+
+
+class PasswordResetSetPasswordForm(SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['new_password1'].widget.attrs.update({'class': 'form-control', 'autocomplete': 'new-password'})
+        self.fields['new_password2'].widget.attrs.update({'class': 'form-control', 'autocomplete': 'new-password'})
 
 
 class StaffAuthenticationForm(AuthenticationForm):
@@ -221,6 +309,37 @@ class ProductFilterForm(forms.Form):
     category = forms.CharField(required=False)
 
 
+class StaffCatalogExportForm(forms.Form):
+    resource = forms.ChoiceField(
+        choices=[
+            ('products', 'Products'),
+            ('variants', 'Variants'),
+            ('inventory', 'Inventory by location'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select staff-select'}),
+    )
+
+
+class StaffCatalogImportForm(forms.Form):
+    resource = forms.ChoiceField(
+        choices=[
+            ('products', 'Products'),
+            ('variants', 'Variants'),
+            ('inventory', 'Inventory by location'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select staff-select'}),
+    )
+    import_file = forms.FileField(
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control staff-file-input', 'accept': '.csv,text/csv'}),
+    )
+
+    def clean_import_file(self):
+        import_file = self.cleaned_data['import_file']
+        if not import_file.name.lower().endswith('.csv'):
+            raise forms.ValidationError('Upload a CSV file exported from the bulk tools or Django admin.')
+        return import_file
+
+
 class StoreLocationStaffForm(forms.ModelForm):
     class Meta:
         model = StoreLocation
@@ -232,6 +351,15 @@ class StoreLocationStaffForm(forms.ModelForm):
             'sort_order': forms.NumberInput(attrs={'class': 'form-control staff-input', 'min': '0'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_pickup_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class EmailSettingsStaffForm(forms.ModelForm):
+    class Meta:
+        model = EmailSettings
+        fields = ('email_provider',)
+        widgets = {
+            'email_provider': forms.Select(attrs={'class': 'form-select staff-select'}),
         }
 
 

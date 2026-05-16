@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Email verified | The Color Shop{% endblock %}
+{% block content %}
+<div class="auth-panel mx-auto">
+  <div class="text-center mb-4">
+    <span class="brand-mark mx-auto mb-3" aria-hidden="true"><i class="bi bi-patch-check"></i></span>
+    <p class="kicker mb-1">Account ready</p>
+    <h1 class="h3 mb-2">Email verified</h1>
+    <p class="text-secondary mb-0">Your account is now active. You can log in and start placing pickup orders.</p>
+  </div>
+  <a class="btn btn-accent btn-lg w-100" href="{% url 'login' %}">Log in</a>
+</div>
+{% endblock %}

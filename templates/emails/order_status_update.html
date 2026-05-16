@@ -1,0 +1,14 @@
+{% extends 'emails/base.html' %}
+{% block email_body %}
+  <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;">Talofa {{ customer_name }},</p>
+  <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;">Your order <strong>{{ order.order_number }}</strong> is now <strong>{{ order.get_status_display }}</strong>.</p>
+  <div style="padding:18px 20px;background-color:#e4ecfb;border-radius:20px;margin-bottom:18px;">
+    <p style="margin:0 0 8px 0;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#667085;">Status update</p>
+    <p style="margin:0;font-size:16px;line-height:1.7;color:#17254d;">{{ status_note }}</p>
+  </div>
+  <div style="padding:18px 20px;background-color:#f7f8fb;border-radius:20px;border:1px solid #e4ecfb;">
+    <p style="margin:0 0 8px 0;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#667085;">Pickup location</p>
+    <p style="margin:0;font-size:16px;line-height:1.7;color:#17254d;">{{ order.pickup_address }}</p>
+  </div>
+  <p style="margin:18px 0 0 0;font-size:14px;line-height:1.7;color:#667085;">Use the button below to review the full order details after logging into your customer account.</p>
+{% endblock %}

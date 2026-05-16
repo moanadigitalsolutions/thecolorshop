@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}Too many requests | The Color Shop{% endblock %}
+{% block content %}
+<div class="auth-panel mx-auto text-center">
+  <span class="brand-mark mx-auto mb-3" aria-hidden="true"><i class="bi bi-hourglass-split"></i></span>
+  <p class="kicker mb-1">Please wait</p>
+  <h1 class="h3 mb-2">Too many requests</h1>
+  <p class="text-secondary mb-3">We have temporarily slowed this action down to protect accounts and forms. Please wait a moment and try again.</p>
+  <a class="btn btn-accent btn-lg" href="{% url 'product_list' %}">Return to storefront</a>
+</div>
+{% endblock %}

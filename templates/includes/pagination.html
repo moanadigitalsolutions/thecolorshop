@@ -1,0 +1,27 @@
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+  <nav aria-label="{{ pagination_label|default:'Pagination' }}" class="{{ pagination_nav_class|default:'mt-4' }}">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+      <p class="text-secondary small mb-0">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </p>
+
+      <ul class="pagination mb-0">
+        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+          <a class="page-link" href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page=1" aria-label="First page">First</a>
+        </li>
+        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+          <a class="page-link" href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page={% if page_obj.has_previous %}{{ page_obj.previous_page_number }}{% else %}1{% endif %}" aria-label="Previous page">Previous</a>
+        </li>
+        <li class="page-item active" aria-current="page">
+          <span class="page-link">{{ page_obj.number }}</span>
+        </li>
+        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+          <a class="page-link" href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page={% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}{{ page_obj.paginator.num_pages }}{% endif %}" aria-label="Next page">Next</a>
+        </li>
+        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+          <a class="page-link" href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page={{ page_obj.paginator.num_pages }}" aria-label="Last page">Last</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+{% endif %}

@@ -1,0 +1,93 @@
+{% extends 'staff/base_admin.html' %}
+{% block title %}Email Settings | Staff Admin{% endblock %}
+{% block staff_page_title %}Email Delivery Settings{% endblock %}
+{% block staff_topbar_state %}
+  <span class="staff-topbar-state">Global provider control</span>
+{% endblock %}
+{% block staff_topbar_actions %}
+  <a class="btn btn-outline-light btn-sm rounded-pill px-3" href="{% url 'admin:shop_emailsettings_changelist' %}">Fallback admin</a>
+  <button class="btn btn-light btn-sm rounded-pill px-3" type="submit" form="email-settings-form">Save</button>
+{% endblock %}
+{% block content %}
+  <section class="staff-panel mb-4">
+    <div class="staff-panel-head">
+      <div>
+        <p class="staff-panel-kicker mb-1">Delivery routing</p>
+        <h2 class="h4 mb-0">Choose the site-wide email provider. SMTP is the default path unless staff switches to Brevo.</h2>
+      </div>
+    </div>
+  </section>
+
+  <section class="staff-stat-grid mb-4" aria-label="Email provider metrics">
+    <article class="staff-stat-card tone-blue">
+      <span class="staff-stat-label">Active provider</span>
+      <strong class="staff-stat-value">{{ provider_metrics.active_provider }}</strong>
+      <span class="staff-stat-helper">Used for checkout and order status emails</span>
+    </article>
+    <article class="staff-stat-card {% if provider_metrics.smtp_ready %}tone-teal{% else %}tone-amber{% endif %}">
+      <span class="staff-stat-label">SMTP readiness</span>
+      <strong class="staff-stat-value">{% if provider_metrics.smtp_ready %}Ready{% else %}Needs config{% endif %}</strong>
+      <span class="staff-stat-helper">Host, username, and password come from environment values</span>
+    </article>
+    <article class="staff-stat-card {% if provider_metrics.brevo_ready %}tone-teal{% else %}tone-rose{% endif %}">
+      <span class="staff-stat-label">Brevo readiness</span>
+      <strong class="staff-stat-value">{% if provider_metrics.brevo_ready %}Ready{% else %}Missing API key{% endif %}</strong>
+      <span class="staff-stat-helper">Brevo remains optional until selected</span>
+    </article>
+  </section>
+
+  <div class="row g-4">
+    <div class="col-xl-5">
+      <section class="staff-editor-card h-100">
+        <div class="staff-editor-card-head">
+          <div>
+            <h2 class="h5 mb-1">Active provider</h2>
+            <p class="staff-input-helper mb-0">Switch the delivery path used by storefront checkout, staff order updates, and Django admin actions.</p>
+          </div>
+        </div>
+        <form id="email-settings-form" method="post" class="staff-form-stack mt-3">
+          {% csrf_token %}
+          {% for error in email_settings_form.non_field_errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+          <div>
+            <label class="form-label staff-filter-label" for="{{ email_settings_form.email_provider.id_for_label }}">Email provider</label>
+            {{ email_settings_form.email_provider }}
+            {% for error in email_settings_form.email_provider.errors %}<div class="staff-field-error">{{ error }}</div>{% endfor %}
+          </div>
+          <div class="staff-input-helper">
+            SMTP remains the default operating mode. Change environment values on the server when credentials or hosts need to be updated.
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="col-xl-7">
+      <section class="staff-panel h-100">
+        <div class="staff-panel-head">
+          <div>
+            <p class="staff-panel-kicker mb-1">Configured environment details</p>
+            <h2 class="h4 mb-0">Runtime summary</h2>
+          </div>
+        </div>
+
+        <dl class="row mb-0 gy-3">
+          <div class="col-sm-6">
+            <dt class="staff-filter-label">SMTP host</dt>
+            <dd class="mb-0">{{ provider_details.smtp_host|default:'Not configured' }}</dd>
+          </div>
+          <div class="col-sm-6">
+            <dt class="staff-filter-label">SMTP port</dt>
+            <dd class="mb-0">{{ provider_details.smtp_port }}</dd>
+          </div>
+          <div class="col-sm-6">
+            <dt class="staff-filter-label">SMTP username</dt>
+            <dd class="mb-0">{{ provider_details.smtp_username|default:'Not configured' }}</dd>
+          </div>
+          <div class="col-sm-6">
+            <dt class="staff-filter-label">Brevo sender</dt>
+            <dd class="mb-0">{{ provider_details.brevo_sender|default:'Not configured' }}</dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+  </div>
+{% endblock %}

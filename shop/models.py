@@ -8,6 +8,8 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
+from .media_utils import convert_image_file_to_webp, should_convert_image
+
 
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -64,6 +66,34 @@ class StoreLocation(TimeStampedModel):
             defaults={'address': settings.STORE_PICKUP_ADDRESS, 'sort_order': 1},
         )
         return location
+
+
+class EmailSettings(TimeStampedModel):
+    PROVIDER_SMTP = 'smtp'
+    PROVIDER_BREVO = 'brevo'
+
+    PROVIDER_CHOICES = [
+        (PROVIDER_SMTP, 'SMTP'),
+        (PROVIDER_BREVO, 'Brevo'),
+    ]
+
+    email_provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES, default=PROVIDER_SMTP)
+
+    class Meta:
+        verbose_name = 'email settings'
+        verbose_name_plural = 'email settings'
+
+    def __str__(self):
+        return f'Email provider: {self.get_email_provider_display()}'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_solo(cls):
+        settings_obj, _created = cls.objects.get_or_create(pk=1, defaults={'email_provider': cls.PROVIDER_SMTP})
+        return settings_obj
 
 
 class Product(TimeStampedModel):
@@ -195,12 +225,23 @@ class ProductMedia(TimeStampedModel):
         return self.file.name.rsplit('/', 1)[-1]
 
     def save(self, *args, **kwargs):
+        previous_file_name = ''
+        if self.pk:
+            previous_file_name = type(self).objects.filter(pk=self.pk).values_list('file', flat=True).first() or ''
+
         if not self.media_type:
             self.media_type = self.detect_media_type(self.file)
+
+        if self.file and should_convert_image(self.file, self.media_type):
+            self.file = convert_image_file_to_webp(self.file, output_name=self.file.name)
+
         if not self.sort_order:
             max_sort_order = self.product.media_assets.exclude(pk=self.pk).aggregate(models.Max('sort_order'))['sort_order__max'] or 0
             self.sort_order = max_sort_order + 1
         super().save(*args, **kwargs)
+
+        if previous_file_name and previous_file_name != self.file.name:
+            self.file.storage.delete(previous_file_name)
 
         if self.is_primary:
             self.product.media_assets.exclude(pk=self.pk).filter(is_primary=True).update(is_primary=False)
@@ -393,9 +434,17 @@ class CustomerProfile(TimeStampedModel):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='customer_profile')
     phone_number = models.CharField(max_length=40, blank=True)
     default_pickup_name = models.CharField(max_length=160, blank=True)
+    is_email_verified = models.BooleanField(default=False)
+    email_verified_at = models.DateTimeField(null=True, blank=True)
+    email_verification_sent_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.user.get_full_name() or self.user.get_username()
+
+    def mark_email_verified(self):
+        self.is_email_verified = True
+        self.email_verified_at = timezone.now()
+        self.save(update_fields=['is_email_verified', 'email_verified_at', 'updated_at'])
 
 
 class Order(TimeStampedModel):

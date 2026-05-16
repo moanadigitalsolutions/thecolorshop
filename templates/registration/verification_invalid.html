@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Verification link invalid | The Color Shop{% endblock %}
+{% block content %}
+<div class="auth-panel mx-auto">
+  <div class="text-center mb-4">
+    <span class="brand-mark mx-auto mb-3" aria-hidden="true"><i class="bi bi-exclamation-diamond"></i></span>
+    <p class="kicker mb-1">Verification problem</p>
+    <h1 class="h3 mb-2">This verification link is not valid</h1>
+    <p class="text-secondary mb-0">The link may have expired or already been used. Request a new verification email to continue.</p>
+  </div>
+  <div class="d-grid gap-2">
+    <a class="btn btn-accent btn-lg" href="{% url 'resend_verification' %}">Resend verification email</a>
+    <a class="btn btn-outline-dark btn-lg" href="{% url 'login' %}">Back to login</a>
+  </div>
+</div>
+{% endblock %}
